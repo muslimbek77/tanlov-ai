@@ -1,0 +1,16 @@
+nohup: ignoring input
+
+> tanlov-ai-frontend@0.1.0 dev
+> vite
+
+
+  VITE v4.5.14  ready in 209 ms
+
+  ➜  Local:   http://localhost:5175/
+  ➜  Network: http://10.10.15.126:5175/
+  ➜  Network: http://192.168.200.232:5175/
+  ➜  Network: http://172.18.0.1:5175/
+10:35:02 AM [vite] hmr update /src/pages/DashboardSimple.tsx, /src/index.css
+10:36:13 AM [vite] hmr update /src/pages/DashboardSimple.tsx, /src/index.css
+10:36:14 AM [vite] hmr update /src/App.tsx, /src/index.css
+10:36:33 AM [vite] hmr update /src/pages/DashboardSimple.tsx, /src/index.css
