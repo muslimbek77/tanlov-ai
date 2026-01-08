@@ -1,7 +1,0 @@
-nohup: ignoring input
-INFO 2026-01-08 10:36:35,739 Watching for file changes with StatReloader
-INFO 2026-01-08 10:36:37,301 OpenAI provayderi ulandi
-WARNING 2026-01-08 10:36:37,303 Ollama mavjud emas: HTTPConnectionPool(host='localhost', port=11434): Max retries exceeded with url: /api/tags (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x7a25c3c83350>: Failed to establish a new connection: [Errno 111] Connection refused'))
-INFO 2026-01-08 10:36:50,800 "GET /api/stats/ HTTP/1.1" 200 238
-INFO 2026-01-08 10:38:35,173 "GET /api/health/ HTTP/1.1" 200 59
-INFO 2026-01-08 10:38:40,704 "GET /api/health/ HTTP/1.1" 200 59
