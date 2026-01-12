@@ -20,14 +20,15 @@ const Login: React.FC = () => {
     setError('')
     setLoading(true)
 
-    // Kichik kechikish - real autentifikatsiya hissi uchun
-    await new Promise(resolve => setTimeout(resolve, 500))
-
-    const success = login(username, password)
-    
-    if (success) {
-      navigate('/')
-    } else {
+    try {
+      const success = await login(username, password)
+      
+      if (success) {
+        navigate('/')
+      } else {
+        setError(t('login.error'))
+      }
+    } catch (err) {
       setError(t('login.error'))
     }
     

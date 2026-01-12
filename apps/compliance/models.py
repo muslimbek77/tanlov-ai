@@ -1,5 +1,5 @@
 from django.db import models
-from django.contrib.auth.models import User
+from django.conf import settings
 from apps.tenders.models import Tender
 from apps.participants.models import TenderParticipant
 
@@ -91,7 +91,7 @@ class ComplianceCheck(models.Model):
     recommendations = models.TextField(null=True, blank=True, verbose_name='Tavsiyalar')
     
     # Tekshiruv ma'lumotlari
-    checked_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='Tekshirgan')
+    checked_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='Tekshirgan')
     checked_at = models.DateTimeField(null=True, blank=True, verbose_name='Tekshirilgan vaqt')
     
     created_at = models.DateTimeField(auto_now_add=True)
@@ -143,8 +143,8 @@ class ComplianceReport(models.Model):
     corrective_actions = models.TextField(null=True, blank=True, verbose_name='Tuzatish choralari')
     
     # Tasdiq
-    prepared_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='prepared_reports', verbose_name='Tayyorlovchi')
-    approved_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='approved_reports', verbose_name='Tasdiqlovchi')
+    prepared_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='prepared_reports', verbose_name='Tayyorlovchi')
+    approved_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='approved_reports', verbose_name='Tasdiqlovchi')
     approved_at = models.DateTimeField(null=True, blank=True, verbose_name='Tasdiqlangan vaqt')
     
     created_at = models.DateTimeField(auto_now_add=True)

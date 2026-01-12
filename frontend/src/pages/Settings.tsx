@@ -26,7 +26,7 @@ const Settings: React.FC = () => {
   const [settings, setSettings] = useState<AnalysisSettings>({
     similarity_threshold: 70,
     price_deviation_threshold: 25,
-    min_participants_for_analysis: 3
+    min_participants_for_analysis: 2
   })
   
   const [saved, setSaved] = useState(false)

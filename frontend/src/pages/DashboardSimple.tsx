@@ -170,40 +170,6 @@ const DashboardSimple: React.FC = () => {
             </Link>
           </CardContent>
         </Card>
-
-        {/* Anti-Fraud */}
-        <Card className="border-2 border-red-200 dark:border-red-800">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-foreground">
-              <AlertTriangle className="h-5 w-5 text-red-500" />
-              {t('dashboard.antifraud_title')}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-muted-foreground">
-              {t('dashboard.antifraud_desc')}
-            </p>
-            <ul className="text-sm space-y-2">
-              <li className="flex items-center gap-2 text-foreground">
-                <Shield className="h-4 w-4 text-amber-500" />
-                {t('dashboard.antifraud_feature1')}
-              </li>
-              <li className="flex items-center gap-2 text-foreground">
-                <Shield className="h-4 w-4 text-amber-500" />
-                {t('dashboard.antifraud_feature2')}
-              </li>
-              <li className="flex items-center gap-2 text-foreground">
-                <Shield className="h-4 w-4 text-amber-500" />
-                {t('dashboard.antifraud_feature3')}
-              </li>
-            </ul>
-            <Link to="/anti-fraud">
-              <Button variant="outline" className="w-full border-red-200 hover:bg-red-50 dark:hover:bg-red-900/20">
-                {t('dashboard.antifraud_btn')}
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
       </div>
     </div>
   )

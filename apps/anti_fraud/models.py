@@ -1,5 +1,5 @@
 from django.db import models
-from django.contrib.auth.models import User
+from django.conf import settings
 from apps.tenders.models import Tender
 from apps.participants.models import TenderParticipant
 
@@ -47,7 +47,7 @@ class FraudDetection(models.Model):
     evidence = models.JSONField(default=list, verbose_name='Dalillar')
     
     # Tekshiruv
-    reviewer = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='Tekshiruvchi')
+    reviewer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='Tekshiruvchi')
     review_notes = models.TextField(null=True, blank=True, verbose_name='Tekshiruv izohlari')
     reviewed_at = models.DateTimeField(null=True, blank=True, verbose_name='Tekshirilgan vaqt')
     

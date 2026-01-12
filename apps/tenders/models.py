@@ -1,5 +1,5 @@
 from django.db import models
-from django.contrib.auth.models import User
+from django.conf import settings
 from pgvector.django import VectorField
 
 
@@ -42,7 +42,7 @@ class Tender(models.Model):
     # Vektorli ma'lumotlar RAG uchun
     requirements_vector = VectorField(dimensions=1536, null=True, blank=True, verbose_name='Talablar vektori')
     
-    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, verbose_name='Yaratuvchi')
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, verbose_name='Yaratuvchi')
     
     class Meta:
         verbose_name = 'Tender'

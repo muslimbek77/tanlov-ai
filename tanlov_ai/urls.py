@@ -5,6 +5,8 @@ from django.conf.urls.static import static
 from django.http import JsonResponse
 from django.db import connection
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny
 
 
 def health_check(request):
@@ -28,11 +30,13 @@ def dashboard_stats(request):
     """Dashboard statistikasi"""
     from apps.tenders.models import Tender
     from apps.participants.models import Participant, TenderParticipant
-    from apps.evaluations.models import Evaluation
+    from apps.evaluations.models import Evaluation, TenderAnalysisResult
     from apps.anti_fraud.models import FraudDetection
     from apps.compliance.models import ComplianceCheck
+    from django.db.models import Sum
     
     try:
+        # Eski modellardan
         total_tenders = Tender.objects.count()
         active_tenders = Tender.objects.filter(status='active').count()
         total_participants = Participant.objects.count()
@@ -42,6 +46,18 @@ def dashboard_stats(request):
         high_risk_frauds = FraudDetection.objects.filter(severity__in=['high', 'critical']).count()
         compliance_checks = ComplianceCheck.objects.count()
         compliance_passed = ComplianceCheck.objects.filter(status='passed').count()
+        
+        # Yangi TenderAnalysisResult dan
+        analysis_count = TenderAnalysisResult.objects.count()
+        analysis_participants = TenderAnalysisResult.objects.aggregate(
+            total=Sum('participant_count')
+        )['total'] or 0
+        
+        # Eng katta qiymatlarni olish
+        total_tenders = max(total_tenders, analysis_count)
+        total_evaluations = max(total_evaluations, analysis_count)
+        total_participants = max(total_participants, analysis_participants)
+        active_tenders = max(active_tenders, analysis_count)
         
         return JsonResponse({
             "success": True,
@@ -137,6 +153,9 @@ urlpatterns = [
     # OpenAPI Schema va Dokumentatsiya
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
     path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
+    
+    # Auth va Users API
+    path('api/auth/', include('apps.users.urls')),
     
     # App URLlar
     path('api/tenders/', include('apps.tenders.urls')),

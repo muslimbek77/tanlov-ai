@@ -59,6 +59,48 @@ class TenderAnalyzer:
         self.tender_requirements: List[TenderRequirement] = []
         self.tender_info: Dict[str, Any] = {}
     
+    def restore_tender_analysis(self, tender_data: Dict[str, Any]) -> bool:
+        """
+        Frontend'dan kelgan tender tahlilini tiklash
+        
+        Args:
+            tender_data: Frontend'dan kelgan tender tahlili
+            
+        Returns:
+            Muvaffaqiyatli tiklanganmi
+        """
+        try:
+            logger.info("Tender tahlilini tiklash boshlandi")
+            
+            # Tender info
+            self.tender_info = {
+                'tender_purpose': tender_data.get('tender_purpose', tender_data.get('purpose', '')),
+                'tender_type': tender_data.get('tender_type', tender_data.get('type', '')),
+            }
+            
+            # Talablarni tiklash
+            requirements = tender_data.get('requirements', [])
+            self.tender_requirements = []
+            
+            for i, req in enumerate(requirements):
+                if isinstance(req, dict):
+                    self.tender_requirements.append(TenderRequirement(
+                        id=req.get('id', f'REQ_{i+1}'),
+                        title=req.get('title', req.get('description', '')),
+                        description=req.get('description', req.get('title', '')),
+                        category=req.get('category', 'general'),
+                        is_mandatory=req.get('is_mandatory', req.get('mandatory', True)),
+                        weight=req.get('weight', 10),
+                        evaluation_criteria=req.get('evaluation_criteria', req.get('criteria', ''))
+                    ))
+            
+            logger.info(f"Tender tahlili tiklandi: {len(self.tender_requirements)} talab")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Tender tahlilini tiklashda xatolik: {e}")
+            return False
+    
     def analyze_tender_document(self, tender_text: str, tender_metadata: Dict[str, Any] = None) -> Dict[str, Any]:
         """
         Tender shartnomasini tahlil qilish
