@@ -1,5 +1,5 @@
 from django.db import models
-from django.contrib.auth.models import User
+from django.conf import settings
 from apps.tenders.models import Tender
 from apps.participants.models import TenderParticipant
 
@@ -13,7 +13,7 @@ class Evaluation(models.Model):
     ]
     
     tender = models.ForeignKey(Tender, on_delete=models.CASCADE, related_name='evaluations')
-    evaluator = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, verbose_name='Baholovchi')
+    evaluator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, verbose_name='Baholovchi')
     
     # Baholash jarayoni
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending', verbose_name='Holati')
@@ -154,3 +154,39 @@ class EvaluationLog(models.Model):
     
     def __str__(self):
         return f"{self.evaluation.tender.tender_number} - {self.log_type}"
+
+
+class TenderAnalysisResult(models.Model):
+    """
+    Tender tahlil natijalarini saqlash uchun model.
+    Frontend'dan kelgan tahlil natijalarini bazaga saqlaydi.
+    """
+    
+    # Tender ma'lumotlari
+    tender_name = models.CharField(max_length=500, verbose_name='Tender nomi')
+    tender_type = models.CharField(max_length=100, null=True, blank=True, verbose_name='Tender turi')
+    tender_data = models.JSONField(default=dict, verbose_name='Tender tahlili')
+    
+    # Ishtirokchilar tahlili
+    participants = models.JSONField(default=list, verbose_name='Ishtirokchilar tahlili')
+    participant_count = models.IntegerField(default=0, verbose_name='Ishtirokchilar soni')
+    
+    # Natijalar
+    ranking = models.JSONField(default=list, verbose_name='Reyting')
+    winner_name = models.CharField(max_length=255, null=True, blank=True, verbose_name='G\'olib')
+    winner_score = models.FloatField(null=True, blank=True, verbose_name='G\'olib balli')
+    summary = models.TextField(null=True, blank=True, verbose_name='Xulosa')
+    
+    # Meta
+    language = models.CharField(max_length=10, default='uz', verbose_name='Til')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Yaratilgan vaqt')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='Yangilangan vaqt')
+    
+    class Meta:
+        verbose_name = 'Tender tahlil natijasi'
+        verbose_name_plural = 'Tender tahlil natijalari'
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"{self.tender_name} - {self.created_at.strftime('%Y-%m-%d %H:%M')}"
+

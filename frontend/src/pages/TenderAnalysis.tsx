@@ -19,7 +19,8 @@ import {
   Plus,
   Trash2,
   BarChart3,
-  History
+  History,
+  Download
 } from 'lucide-react'
 
 const API_BASE = 'http://localhost:8000/api/evaluations'
@@ -73,19 +74,34 @@ const TenderAnalysis: React.FC = () => {
   const navigate = useNavigate()
   const { language, t } = useTheme()
   
+  // Settings
+  const getMinParticipants = () => {
+    try {
+      const savedSettings = localStorage.getItem('analysis_settings')
+      if (savedSettings) {
+        const settings = JSON.parse(savedSettings)
+        return settings.min_participants_for_analysis || 2
+      }
+    } catch (e) {
+      console.error('Settings loading error:', e)
+    }
+    return 2
+  }
+  
   // States
   const [step, setStep] = useState<'tender' | 'participants' | 'results'>('tender')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showHistory, setShowHistory] = useState(false)
   const [savedResults, setSavedResults] = useState<any[]>([])
+  const [pdfLoading, setPdfLoading] = useState(false)
   
   // Tender
   const [tenderFile, setTenderFile] = useState<File | null>(null)
   const [tenderAnalysis, setTenderAnalysis] = useState<TenderAnalysis | null>(null)
   
-  // Participants
-  const [participantFiles, setParticipantFiles] = useState<{name: string, file: File}[]>([])
+  // Participants - boshlang'ichda bitta bo'sh forma
+  const [participantFiles, setParticipantFiles] = useState<{name: string, file: File | null}[]>([{ name: '', file: null }])
   const [participantAnalyses, setParticipantAnalyses] = useState<ParticipantAnalysis[]>([])
   
   // Results
@@ -96,6 +112,35 @@ const TenderAnalysis: React.FC = () => {
   // Load saved results on mount and check for continue parameter
   useEffect(() => {
     loadSavedResults()
+    
+    // Avvalgi tahlilni tiklash (agar mavjud bo'lsa)
+    const savedTenderAnalysis = localStorage.getItem('current_tender_analysis')
+    const savedParticipantAnalyses = localStorage.getItem('current_participant_analyses')
+    const savedStep = localStorage.getItem('current_analysis_step')
+    
+    if (savedTenderAnalysis) {
+      try {
+        const tenderData = JSON.parse(savedTenderAnalysis)
+        setTenderAnalysis(tenderData)
+        console.log('Tender tahlili tiklandi:', tenderData)
+      } catch (e) {
+        console.error('Tender tahlilini tiklashda xatolik:', e)
+      }
+    }
+    
+    if (savedParticipantAnalyses) {
+      try {
+        const participantData = JSON.parse(savedParticipantAnalyses)
+        setParticipantAnalyses(participantData)
+        console.log('Ishtirokchilar tahlili tiklandi:', participantData.length)
+      } catch (e) {
+        console.error('Ishtirokchilar tahlilini tiklashda xatolik:', e)
+      }
+    }
+    
+    if (savedStep && ['tender', 'participants', 'results'].includes(savedStep)) {
+      setStep(savedStep as 'tender' | 'participants' | 'results')
+    }
     
     // Tarixdan davom ettirish
     if (searchParams.get('continue') === 'true') {
@@ -118,7 +163,7 @@ const TenderAnalysis: React.FC = () => {
           }
           // Ishtirokchilar sahifasiga o'tish (yangi ishtirokchi qo'shish uchun)
           setStep('participants')
-          setParticipantFiles([{ name: '', file: null as any }])
+          setParticipantFiles([{ name: '', file: null }])
           // localStorage ni tozalash
           localStorage.removeItem('continue_analysis')
         } catch (e) {
@@ -214,6 +259,9 @@ const TenderAnalysis: React.FC = () => {
 
       if (data.success) {
         setTenderAnalysis(data.analysis)
+        // LocalStorage'ga saqlash (sahifa yangilanganda tiklash uchun)
+        localStorage.setItem('current_tender_analysis', JSON.stringify(data.analysis))
+        localStorage.setItem('current_analysis_step', 'participants')
         setStep('participants')
       } else {
         setError(data.error || (language === 'uz' ? 'Tahlilda xatolik' : 'Ошибка анализа'))
@@ -228,12 +276,18 @@ const TenderAnalysis: React.FC = () => {
 
   // Ishtirokchi qo'shish
   const addParticipant = () => {
-    setParticipantFiles([...participantFiles, { name: '', file: null as any }])
+    setParticipantFiles([...participantFiles, { name: '', file: null }])
   }
 
   // Ishtirokchi o'chirish
   const removeParticipant = (index: number) => {
-    setParticipantFiles(participantFiles.filter((_, i) => i !== index))
+    const filtered = participantFiles.filter((_, i) => i !== index)
+    // Agar hamma o'chirilsa, bitta bo'sh forma qoldirish
+    if (filtered.length === 0) {
+      setParticipantFiles([{ name: '', file: null }])
+    } else {
+      setParticipantFiles(filtered)
+    }
   }
 
   // Ishtirokchi faylini yuklash
@@ -258,6 +312,47 @@ const TenderAnalysis: React.FC = () => {
   const analyzeParticipants = async () => {
     const validParticipants = participantFiles.filter(p => p.file && p.name)
     
+    console.log('=== ANALYZE PARTICIPANTS ===')
+    console.log('participantFiles:', participantFiles)
+    console.log('validParticipants:', validParticipants)
+    console.log('participantAnalyses:', participantAnalyses)
+    
+    // Yangi ishtirokchilar bo'lmasa va avvalgisi bor bo'lsa - faqat solishtirish
+    if (validParticipants.length === 0 && participantAnalyses.length > 0) {
+      // Minimal ishtirokchilar sonini tekshirish
+      const minParticipants = getMinParticipants()
+      if (participantAnalyses.length < minParticipants) {
+        setError(language === 'uz' 
+          ? `Reyting yaratish uchun kamida ${minParticipants} ta ishtirokchi kerak. Hozircha ${participantAnalyses.length} ta tahlil qilingan.`
+          : `Для создания рейтинга необходимо минимум ${minParticipants} участника. Сейчас проанализировано ${participantAnalyses.length}.`)
+        return
+      }
+      
+      // Faqat qayta solishtirish
+      setLoading(true)
+      try {
+        const compareResponse = await fetch(`${API_BASE}/compare-participants/`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ participants: participantAnalyses, language })
+        })
+
+        const compareData = await compareResponse.json()
+
+        if (compareData.success) {
+          setRanking(compareData.ranking)
+          setWinner(compareData.winner)
+          setSummary(compareData.summary)
+          setStep('results')
+        }
+      } catch (err) {
+        setError(t('analysis.error_analysis'))
+      } finally {
+        setLoading(false)
+      }
+      return
+    }
+    
     if (validParticipants.length === 0) {
       setError(t('analysis.at_least_one'))
       return
@@ -270,16 +365,23 @@ const TenderAnalysis: React.FC = () => {
 
     try {
       for (const participant of validParticipants) {
-        // Allaqachon tahlil qilingan ishtirokchini o'tkazib yuborish
-        if (analyses.some(a => a.participant_name === participant.name)) {
-          continue
-        }
+        // Allaqachon tahlil qilingan ishtirokchini yangilash yoki qo'shish
+        const existingIndex = analyses.findIndex(a => a.participant_name === participant.name)
         
         const formData = new FormData()
         formData.append('name', participant.name)
-        formData.append('file', participant.file)
+        formData.append('file', participant.file!)
         formData.append('language', language)
+        
+        // Tender tahlilini ham yuborish (server qayta ishga tushgan bo'lsa)
+        if (tenderAnalysis) {
+          console.log('Tender tahlili yuborilmoqda:', tenderAnalysis)
+          formData.append('tender_data', JSON.stringify(tenderAnalysis))
+        } else {
+          console.warn('Tender tahlili topilmadi!')
+        }
 
+        console.log('API so\'rov yuborilmoqda:', participant.name)
         const response = await fetch(`${API_BASE}/analyze-participant/`, {
           method: 'POST',
           body: formData
@@ -288,13 +390,34 @@ const TenderAnalysis: React.FC = () => {
         const data = await response.json()
 
         if (data.success) {
-          analyses.push(data.analysis)
+          if (existingIndex >= 0) {
+            // Mavjud ishtirokchini yangilash
+            analyses[existingIndex] = data.analysis
+          } else {
+            // Yangi ishtirokchi qo'shish
+            analyses.push(data.analysis)
+          }
+        } else {
+          console.error('Ishtirokchi tahlilida xatolik:', data.error)
+          setError(data.error || t('analysis.error_analysis'))
         }
       }
 
       setParticipantAnalyses(analyses)
+      // LocalStorage'ga saqlash
+      localStorage.setItem('current_participant_analyses', JSON.stringify(analyses))
       // Fayl ro'yxatini tozalash
-      setParticipantFiles([])
+      setParticipantFiles([{ name: '', file: null }])
+
+      // Minimal ishtirokchilar sonini tekshirish
+      const minParticipants = getMinParticipants()
+      if (analyses.length < minParticipants) {
+        setError(language === 'uz' 
+          ? `Reyting yaratish uchun kamida ${minParticipants} ta ishtirokchi kerak. Hozircha ${analyses.length} ta tahlil qilingan.`
+          : `Для создания рейтинга необходимо минимум ${minParticipants} участника. Сейчас проанализировано ${analyses.length}.`)
+        setLoading(false)
+        return
+      }
 
       // Solishtirish
       if (analyses.length > 0) {
@@ -311,8 +434,27 @@ const TenderAnalysis: React.FC = () => {
           setWinner(compareData.winner)
           setSummary(compareData.summary)
           setStep('results')
+          localStorage.setItem('current_analysis_step', 'results')
           
-          // Auto-save result
+          // Bazaga saqlash
+          try {
+            await fetch(`${API_BASE}/save-result/`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                tender: tenderAnalysis,
+                participants: analyses,
+                ranking: compareData.ranking,
+                winner: compareData.winner,
+                summary: compareData.summary,
+                language
+              })
+            })
+          } catch (saveErr) {
+            console.error('Bazaga saqlashda xatolik:', saveErr)
+          }
+          
+          // LocalStorage'ga ham saqlash (backup)
           setTimeout(() => {
             const result = {
               id: Date.now(),
@@ -346,15 +488,94 @@ const TenderAnalysis: React.FC = () => {
       await fetch(`${API_BASE}/reset/`, { method: 'POST' })
     } catch (err) {}
     
+    // LocalStorage'ni tozalash
+    localStorage.removeItem('current_tender_analysis')
+    localStorage.removeItem('current_participant_analyses')
+    localStorage.removeItem('current_analysis_step')
+    
     setStep('tender')
     setTenderFile(null)
     setTenderAnalysis(null)
-    setParticipantFiles([])
+    setParticipantFiles([{ name: '', file: null }])
     setParticipantAnalyses([])
     setRanking([])
     setWinner(null)
     setSummary('')
     setError(null)
+  }
+
+  // PDF yuklab olish
+  const downloadPDF = async () => {
+    if (!ranking.length) return
+    
+    setPdfLoading(true)
+    try {
+      const response = await fetch(`${API_BASE}/export-pdf/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tender_analysis: tenderAnalysis,
+          ranking: ranking,
+          winner: winner,
+          summary: summary,
+          language: language
+        })
+      })
+
+      if (response.ok) {
+        const blob = await response.blob()
+        const url = window.URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `tender_tahlil_${new Date().toISOString().slice(0, 10)}.pdf`
+        document.body.appendChild(a)
+        a.click()
+        window.URL.revokeObjectURL(url)
+        document.body.removeChild(a)
+      } else {
+        setError(language === 'uz' ? 'PDF yuklab olishda xatolik' : 'Ошибка загрузки PDF')
+      }
+    } catch (err) {
+      console.error('PDF download error:', err)
+      setError(language === 'uz' ? 'PDF yuklab olishda xatolik' : 'Ошибка загрузки PDF')
+    } finally {
+      setPdfLoading(false)
+    }
+  }
+
+  // Excel yuklab olish
+  const downloadExcel = async () => {
+    if (!ranking.length) return
+    
+    try {
+      const response = await fetch(`${API_BASE}/download-excel/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tender: tenderAnalysis,
+          ranking: ranking,
+          summary: summary,
+          language: language
+        })
+      })
+
+      if (response.ok) {
+        const blob = await response.blob()
+        const url = window.URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `tender_tahlil_${new Date().toISOString().slice(0, 10)}.xlsx`
+        document.body.appendChild(a)
+        a.click()
+        window.URL.revokeObjectURL(url)
+        document.body.removeChild(a)
+      } else {
+        setError(language === 'uz' ? 'Excel yuklab olishda xatolik' : 'Ошибка загрузки Excel')
+      }
+    } catch (err) {
+      console.error('Excel download error:', err)
+      setError(language === 'uz' ? 'Excel yuklab olishda xatolik' : 'Ошибка загрузки Excel')
+    }
   }
 
   // Risk level badge
@@ -569,15 +790,9 @@ const TenderAnalysis: React.FC = () => {
           {/* Participants Upload */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center justify-between text-foreground">
-                <span className="flex items-center">
-                  <Users className="w-5 h-5 mr-2" />
-                  {t('analysis.participants')}
-                </span>
-                <Button variant="outline" size="sm" onClick={addParticipant}>
-                  <Plus className="w-4 h-4 mr-1" />
-                  {t('analysis.add')}
-                </Button>
+              <CardTitle className="flex items-center text-foreground">
+                <Users className="w-5 h-5 mr-2" />
+                {t('analysis.participants')}
               </CardTitle>
               <CardDescription>
                 {t('analysis.participants_desc')}
@@ -590,8 +805,18 @@ const TenderAnalysis: React.FC = () => {
                   <h4 className="font-medium mb-2 text-foreground">✓ {t('analysis.analyzed_participants')}:</h4>
                   <div className="flex flex-wrap gap-2">
                     {participantAnalyses.map((p, i) => (
-                      <Badge key={i} variant="secondary">
+                      <Badge key={i} variant="secondary" className="flex items-center gap-1 pr-1">
                         {p.participant_name} - {(p.total_weighted_score || p.overall_match_percentage || 0).toFixed(0)}%
+                        <button
+                          onClick={() => {
+                            const updated = participantAnalyses.filter((_, idx) => idx !== i);
+                            setParticipantAnalyses(updated);
+                          }}
+                          className="ml-1 hover:text-red-500 transition-colors"
+                          title="O'chirish"
+                        >
+                          ×
+                        </button>
                       </Badge>
                     ))}
                   </div>
@@ -601,13 +826,9 @@ const TenderAnalysis: React.FC = () => {
                 </div>
               )}
               
-              {participantFiles.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <Users className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                  <p>{t('analysis.add_participant_hint')}</p>
-                </div>
-              ) : (
-                participantFiles.map((p, index) => (
+              {/* Yangi ishtirokchi qo'shish formasi - har doim ko'rsatiladi */}
+              <div className="space-y-4">
+                {participantFiles.map((p, index) => (
                   <div key={index} className="flex items-center space-x-4 p-4 border rounded-lg">
                     <div className="flex-1">
                       <input
@@ -620,19 +841,38 @@ const TenderAnalysis: React.FC = () => {
                       <input
                         type="file"
                         accept=".pdf,.docx,.doc,.txt"
-                        onChange={(e) => e.target.files?.[0] && handleParticipantFile(index, e.target.files[0])}
+                        onChange={(e) => {
+                          if (e.target.files?.[0]) {
+                            handleParticipantFile(index, e.target.files[0])
+                          }
+                        }}
                         className="text-sm"
                       />
                       {p.file && (
                         <p className="text-xs text-muted-foreground mt-1">{p.file.name}</p>
                       )}
                     </div>
-                    <Button variant="ghost" size="sm" onClick={() => removeParticipant(index)}>
-                      <Trash2 className="w-4 h-4 text-red-500" />
-                    </Button>
+                    {participantFiles.length > 1 && (
+                      <Button variant="ghost" size="sm" onClick={() => removeParticipant(index)}>
+                        <Trash2 className="w-4 h-4 text-red-500" />
+                      </Button>
+                    )}
                   </div>
-                ))
-              )}
+                ))}
+                
+                {/* Qo'shimcha ishtirokchi qo'shish tugmasi */}
+                {participantFiles.length > 0 && participantFiles[participantFiles.length - 1]?.file && (
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={addParticipant}
+                    className="w-full"
+                  >
+                    <Plus className="w-4 h-4 mr-1" />
+                    Yana ishtirokchi qo'shish
+                  </Button>
+                )}
+              </div>
 
               <Button 
                 onClick={analyzeParticipants} 
@@ -669,15 +909,30 @@ const TenderAnalysis: React.FC = () => {
                   <p className="text-sm text-muted-foreground">{t('analysis.auto_saved')}</p>
                 </div>
                 <div className="flex gap-2">
-                  <Button onClick={() => navigate('/history')}>
-                    <History className="w-4 h-4 mr-2" />
-                    {t('analysis.history')}
+                  <Button 
+                    onClick={downloadPDF} 
+                    disabled={pdfLoading}
+                    variant="default"
+                  >
+                    {pdfLoading ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <Download className="w-4 h-4 mr-2" />
+                    )}
+                    {language === 'uz' ? 'PDF yuklab olish' : 'Скачать PDF'}
+                  </Button>
+                  <Button 
+                    onClick={downloadExcel} 
+                    variant="outline"
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    {language === 'uz' ? 'Excel' : 'Excel'}
                   </Button>
                   <Button 
                     variant="outline" 
                     onClick={() => {
                       setStep('participants')
-                      setParticipantFiles([...participantFiles, { name: '', file: null as any }])
+                      setParticipantFiles([{ name: '', file: null as any }])
                     }}
                   >
                     <Plus className="w-4 h-4 mr-2" />

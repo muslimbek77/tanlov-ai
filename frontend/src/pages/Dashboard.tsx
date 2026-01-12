@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { Button } from '../components/ui/button'
 import { Badge } from '../components/ui/badge'
@@ -12,135 +13,129 @@ import {
   CheckCircle,
   Clock,
   DollarSign,
-  Shield
+  Shield,
+  RefreshCw,
+  BarChart3,
+  ArrowRight
 } from 'lucide-react'
+
+const API_BASE = 'http://localhost:8000/api'
 
 interface DashboardStats {
   totalTenders: number
   activeTenders: number
   totalParticipants: number
+  tenderParticipants: number
   totalEvaluations: number
   fraudDetections: number
-  complianceIssues: number
-  avgScore: number
-  totalBudget: number
+  highRiskFrauds: number
+  complianceChecks: number
+  compliancePassed: number
 }
 
-interface RecentActivity {
-  id: string
-  type: 'tender' | 'evaluation' | 'fraud' | 'compliance'
-  title_uz: string
-  title_ru: string
-  description_uz: string
-  description_ru: string
-  timestamp: string
-  status: string
+interface AnalysisHistory {
+  id: number
+  date: string
+  tender: string
+  winner: string
+  participantCount: number
+  ranking: any[]
 }
 
 const Dashboard: React.FC = () => {
   const { t, language } = useTheme()
+  const navigate = useNavigate()
   const [stats, setStats] = useState<DashboardStats>({
     totalTenders: 0,
     activeTenders: 0,
     totalParticipants: 0,
+    tenderParticipants: 0,
     totalEvaluations: 0,
     fraudDetections: 0,
-    complianceIssues: 0,
-    avgScore: 0,
-    totalBudget: 0,
+    highRiskFrauds: 0,
+    complianceChecks: 0,
+    compliancePassed: 0,
   })
 
-  const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([])
+  const [analysisHistory, setAnalysisHistory] = useState<AnalysisHistory[]>([])
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
 
   useEffect(() => {
+    // API dan yuklash
     fetchDashboardData()
+    fetchAnalysisHistory()
   }, [])
 
   const fetchDashboardData = async () => {
     try {
-      setStats({
-        totalTenders: 156,
-        activeTenders: 23,
-        totalParticipants: 892,
-        totalEvaluations: 134,
-        fraudDetections: 12,
-        complianceIssues: 8,
-        avgScore: 78.5,
-        totalBudget: 2500000000,
-      })
-
-      setRecentActivity([
-        {
-          id: '1',
-          type: 'tender',
-          title_uz: 'Yangi tender yaratildi',
-          title_ru: 'Создан новый тендер',
-          description_uz: '"Ko\'pkap qurilishi" loyihasi uchun tender e\'lon qilindi',
-          description_ru: 'Объявлен тендер на проект "Строительство моста"',
-          timestamp: '2024-01-07T10:30:00Z',
-          status: 'active',
-        },
-        {
-          id: '2',
-          type: 'evaluation',
-          title_uz: 'Baholash yakunlandi',
-          title_ru: 'Оценка завершена',
-          description_uz: '15 ta ishtirokchi baholandi, g\'olib aniqlandi',
-          description_ru: 'Оценено 15 участников, определён победитель',
-          timestamp: '2024-01-07T09:15:00Z',
-          status: 'completed',
-        },
-        {
-          id: '3',
-          type: 'fraud',
-          title_uz: 'Firibgarlik xavfi aniqlandi',
-          title_ru: 'Обнаружен риск мошенничества',
-          description_uz: '2 ta ishtirokchi o\'rtasida yuqori o\'xshashlik topildi',
-          description_ru: 'Обнаружено высокое сходство между 2 участниками',
-          timestamp: '2024-01-07T08:45:00Z',
-          status: 'high',
-        },
-        {
-          id: '4',
-          type: 'compliance',
-          title_uz: 'Compliance tekshiruvi',
-          title_ru: 'Проверка соответствия',
-          description_uz: 'O\'RQ-684 talablariga muvofiqlik tekshirildi',
-          description_ru: 'Проверено соответствие требованиям ОРК-684',
-          timestamp: '2024-01-07T08:00:00Z',
-          status: 'passed',
-        },
-      ])
+      // Yangi dashboard-stats API
+      const response = await fetch(`${API_BASE}/evaluations/dashboard-stats/`)
+      const data = await response.json()
+      
+      if (data.success) {
+        setStats(prev => ({
+          ...prev,
+          totalTenders: data.stats.total_tenders || 0,
+          activeTenders: data.stats.active_tenders || 0,
+          totalParticipants: data.stats.total_participants || 0,
+          totalEvaluations: data.stats.total_evaluations || 0,
+        }))
+      }
     } catch (error) {
-      console.error('Error fetching dashboard data:', error)
+      console.error('Error fetching dashboard stats:', error)
+      // Fallback: localStorage dan
+      loadAnalysisHistoryFromLocalStorage()
     } finally {
       setLoading(false)
+      setRefreshing(false)
     }
   }
 
-  const getActivityIcon = (type: string) => {
-    switch (type) {
-      case 'tender':
-        return <FileText className="h-4 w-4" />
-      case 'evaluation':
-        return <CheckCircle className="h-4 w-4" />
-      case 'fraud':
-        return <AlertTriangle className="h-4 w-4" />
-      case 'compliance':
-        return <Shield className="h-4 w-4" />
-      default:
-        return <Clock className="h-4 w-4" />
+  const fetchAnalysisHistory = async () => {
+    try {
+      const response = await fetch(`${API_BASE}/evaluations/history/?limit=5`)
+      const data = await response.json()
+      
+      if (data.success && data.history.length > 0) {
+        setAnalysisHistory(data.history)
+      } else {
+        // Fallback: localStorage dan
+        loadAnalysisHistoryFromLocalStorage()
+      }
+    } catch (error) {
+      console.error('Error fetching history:', error)
+      loadAnalysisHistoryFromLocalStorage()
     }
   }
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('uz-UZ', {
-      style: 'currency',
-      currency: 'UZS',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount)
+  const loadAnalysisHistoryFromLocalStorage = () => {
+    try {
+      const saved = localStorage.getItem('tender_analysis_history')
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        setAnalysisHistory(parsed.slice(0, 5))
+        
+        // LocalStorage'dan statistikani hisoblash
+        const totalParticipants = parsed.reduce((sum: number, item: any) => sum + (item.participantCount || 0), 0)
+        
+        setStats(prev => ({
+          ...prev,
+          totalTenders: Math.max(prev.totalTenders, parsed.length),
+          totalEvaluations: Math.max(prev.totalEvaluations, parsed.length),
+          totalParticipants: Math.max(prev.totalParticipants, totalParticipants),
+          activeTenders: Math.max(prev.activeTenders, parsed.length),
+        }))
+      }
+    } catch (e) {
+      console.error('Error loading from localStorage:', e)
+    }
+  }
+
+  const handleRefresh = () => {
+    setRefreshing(true)
+    fetchDashboardData()
+    fetchAnalysisHistory()
   }
 
   if (loading) {
@@ -161,14 +156,14 @@ const Dashboard: React.FC = () => {
             {t('dashboard.subtitle')}
           </p>
         </div>
-        <Button>
-          <TrendingUp className="mr-2 h-4 w-4" />
-          {t('dashboard.download_report')}
+        <Button onClick={handleRefresh} disabled={refreshing}>
+          <RefreshCw className={`mr-2 h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+          {language === 'uz' ? 'Yangilash' : 'Обновить'}
         </Button>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">{t('dashboard.total_tenders')}</CardTitle>
@@ -190,7 +185,7 @@ const Dashboard: React.FC = () => {
           <CardContent>
             <div className="text-2xl font-bold">{stats.totalParticipants}</div>
             <p className="text-xs text-muted-foreground">
-              {t('dashboard.all_time')}
+              {stats.tenderParticipants} {language === 'uz' ? 'ta ariza' : 'заявок'}
             </p>
           </CardContent>
         </Card>
@@ -203,125 +198,180 @@ const Dashboard: React.FC = () => {
           <CardContent>
             <div className="text-2xl font-bold">{stats.totalEvaluations}</div>
             <p className="text-xs text-muted-foreground">
-              {t('dashboard.avg_score')}: {stats.avgScore}
+              {language === 'uz' ? 'AI tahlillari' : 'AI анализы'}
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{t('dashboard.total_budget')}</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">{t('dashboard.fraud_risks')}</CardTitle>
+            <AlertTriangle className="h-4 w-4 text-amber-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {formatCurrency(stats.totalBudget)}
-            </div>
+            <div className="text-2xl font-bold">{stats.fraudDetections}</div>
             <p className="text-xs text-muted-foreground">
-              {t('dashboard.all_tenders')}
+              {stats.highRiskFrauds} {language === 'uz' ? 'ta yuqori xavf' : 'высокий риск'}
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">{language === 'uz' ? 'Compliance' : 'Соответствие'}</CardTitle>
+            <Shield className="h-4 w-4 text-emerald-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.complianceChecks}</div>
+            <p className="text-xs text-muted-foreground">
+              {stats.compliancePassed} {language === 'uz' ? "ta o'tdi" : 'прошли'}
             </p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Risk Indicators */}
+      {/* Quick Actions */}
       <div className="grid gap-4 md:grid-cols-2">
-        <Card>
+        <Card className="border-2 border-primary/20 hover:border-primary/40 transition-colors cursor-pointer" onClick={() => navigate('/analysis')}>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-foreground">
-              <AlertTriangle className="h-5 w-5 text-amber-500" />
-              {t('dashboard.fraud_risks')}
+              <BarChart3 className="h-5 w-5 text-primary" />
+              {language === 'uz' ? 'Tender Tahlili' : 'Анализ тендера'}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-foreground">{t('dashboard.detected_risks')}</span>
-              <Badge variant="destructive">{stats.fraudDetections}</Badge>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-foreground">{t('risk.high')}</span>
-              <Badge variant="destructive">3</Badge>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-foreground">{t('risk.medium')}</span>
-              <Badge variant="secondary">5</Badge>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-foreground">{t('risk.low')}</span>
-              <Badge variant="outline">4</Badge>
-            </div>
+            <p className="text-sm text-muted-foreground">
+              {language === 'uz' 
+                ? 'AI yordamida tender shartnomasini tahlil qiling va ishtirokchilarni baholang.'
+                : 'Анализируйте тендерные условия и оценивайте участников с помощью ИИ.'}
+            </p>
+            <ul className="text-sm space-y-1 text-muted-foreground">
+              <li>✓ {language === 'uz' ? 'Tender talablarini avtomatik aniqlash' : 'Автоматическое определение требований'}</li>
+              <li>✓ {language === 'uz' ? 'Ishtirokchilarni har taraflama tahlil' : 'Всесторонний анализ участников'}</li>
+              <li>✓ {language === 'uz' ? "G'olibni aniqlash va tavsiyalar" : 'Определение победителя и рекомендации'}</li>
+            </ul>
+            <Button className="w-full">
+              {language === 'uz' ? 'Tahlilni Boshlash' : 'Начать анализ'}
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-2 border-amber-500/20 hover:border-amber-500/40 transition-colors cursor-pointer" onClick={() => navigate('/anti-fraud')}>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-foreground">
-              <Shield className="h-5 w-5 text-emerald-500" />
-              {t('dashboard.compliance_status')}
+              <AlertTriangle className="h-5 w-5 text-amber-500" />
+              {language === 'uz' ? 'Anti-Fraud Tizimi' : 'Антифрод система'}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-foreground">{t('dashboard.compliance_issues')}</span>
-              <Badge variant="secondary">{stats.complianceIssues}</Badge>
-            </div>
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm text-foreground">
-                <span>{t('dashboard.orq_compliance')}</span>
-                <span>87%</span>
-              </div>
-              <Progress value={87} className="h-2" />
-            </div>
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm text-foreground">
-                <span>{t('dashboard.docs_complete')}</span>
-                <span>92%</span>
-              </div>
-              <Progress value={92} className="h-2" />
-            </div>
+            <p className="text-sm text-muted-foreground">
+              {language === 'uz' 
+                ? 'Korrupsiya va firibgarlik belgilarini avtomatik aniqlash.'
+                : 'Автоматическое обнаружение признаков коррупции и мошенничества.'}
+            </p>
+            <ul className="text-sm space-y-1 text-muted-foreground">
+              <li>✓ {language === 'uz' ? "Metadata o'xshashligini tahlil" : 'Анализ сходства метаданных'}</li>
+              <li>✓ {language === 'uz' ? 'Narx anomaliyalarini aniqlash' : 'Обнаружение ценовых аномалий'}</li>
+              <li>✓ {language === 'uz' ? 'Kelishilgan takliflarni aniqlash' : 'Обнаружение сговора'}</li>
+            </ul>
+            <Button variant="outline" className="w-full">
+              {language === 'uz' ? 'Anti-Fraud Tahlili' : 'Антифрод анализ'}
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
           </CardContent>
         </Card>
       </div>
 
-      {/* Recent Activity */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-foreground">{t('dashboard.recent_activity')}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {recentActivity.map((activity) => (
-              <div key={activity.id} className="flex items-center space-x-4">
-                <div className="flex-shrink-0">
-                  {getActivityIcon(activity.type)}
+      {/* Recent Analysis History */}
+      {analysisHistory.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-foreground">
+              {language === 'uz' ? 'So\'nggi Tahlillar' : 'Недавние анализы'}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {analysisHistory.map((item) => (
+                <div key={item.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                  <div className="flex items-center space-x-4">
+                    <div className="flex-shrink-0">
+                      <BarChart3 className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-foreground truncate max-w-[300px]">
+                        {item.tender}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {language === 'uz' ? "G'olib" : 'Победитель'}: {item.winner} • {item.participantCount} {language === 'uz' ? 'ishtirokchi' : 'участников'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <Badge variant="default">
+                      {language === 'uz' ? 'Yakunlangan' : 'Завершён'}
+                    </Badge>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {new Date(item.date).toLocaleDateString(language === 'uz' ? 'uz-UZ' : 'ru-RU')}
+                    </p>
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground truncate">
-                    {language === 'uz' ? activity.title_uz : activity.title_ru}
-                  </p>
-                  <p className="text-sm text-muted-foreground truncate">
-                    {language === 'uz' ? activity.description_uz : activity.description_ru}
-                  </p>
-                </div>
-                <div className="flex-shrink-0 text-right">
-                  <Badge 
-                    variant={
-                      activity.status === 'completed' ? 'default' :
-                      activity.status === 'active' ? 'secondary' :
-                      activity.status === 'high' ? 'destructive' : 'outline'
-                    }
-                  >
-                    {activity.status}
-                  </Badge>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {new Date(activity.timestamp).toLocaleString(language === 'uz' ? 'uz-UZ' : 'ru-RU')}
-                  </p>
-                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Risk Indicators - show only if there's data */}
+      {(stats.fraudDetections > 0 || stats.complianceChecks > 0) && (
+        <div className="grid gap-4 md:grid-cols-2">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-foreground">
+                <AlertTriangle className="h-5 w-5 text-amber-500" />
+                {t('dashboard.fraud_risks')}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-foreground">{t('dashboard.detected_risks')}</span>
+                <Badge variant="destructive">{stats.fraudDetections}</Badge>
               </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-foreground">{t('risk.high')}</span>
+                <Badge variant="destructive">{stats.highRiskFrauds}</Badge>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-foreground">{t('risk.medium')}</span>
+                <Badge variant="secondary">{Math.max(0, stats.fraudDetections - stats.highRiskFrauds)}</Badge>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-foreground">
+                <Shield className="h-5 w-5 text-emerald-500" />
+                {t('dashboard.compliance_status')}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-foreground">{language === 'uz' ? "Jami tekshiruvlar" : 'Всего проверок'}</span>
+                <Badge variant="secondary">{stats.complianceChecks}</Badge>
+              </div>
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm text-foreground">
+                  <span>{language === 'uz' ? "O'tganlar" : 'Прошли'}</span>
+                  <span>{stats.complianceChecks > 0 ? Math.round((stats.compliancePassed / stats.complianceChecks) * 100) : 0}%</span>
+                </div>
+                <Progress value={stats.complianceChecks > 0 ? (stats.compliancePassed / stats.complianceChecks) * 100 : 0} className="h-2" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   )
 }

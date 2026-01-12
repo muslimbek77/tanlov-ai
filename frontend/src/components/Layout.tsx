@@ -35,8 +35,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const menuItems = [
     { icon: Home, label: t('menu.dashboard'), path: '/' },
     { icon: BarChart3, label: t('menu.analysis'), path: '/analysis' },
-    { icon: History, label: t('menu.history'), path: '/history' },
-    { icon: Shield, label: t('menu.antifraud'), path: '/anti-fraud' },
     { icon: Settings, label: t('menu.settings'), path: '/settings' },
   ]
 
