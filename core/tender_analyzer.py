@@ -343,6 +343,7 @@ JSON:
             ])
             
             # LLM orqali tahlil
+            default_purpose = "Nomalum"
             analysis_prompt = f"""
 Sen tender ishtirokchilarini HAR TARAFLAMA baholash bo'yicha ekspertsan. 
 DIQQAT: Barcha jihatlarni CHUQUR tahlil qil, hech narsa e'tibordan chetda qolmasin!
@@ -351,7 +352,7 @@ TENDER TALABLARI:
 {requirements_text}
 
 TENDER MAQSADI:
-{self.tender_info.get('tender_purpose', 'Noma\'lum')}
+{self.tender_info.get('tender_purpose', default_purpose)}
 
 ISHTIROKCHI HUJJATLARI:
 {participant_text[:8000]}
