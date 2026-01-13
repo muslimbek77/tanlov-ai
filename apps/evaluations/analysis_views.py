@@ -420,30 +420,50 @@ def reset_analysis(request):
 
 
 def draw_header_footer(canvas, doc, language='uz'):
-    """PDF sahifa header va footer - minimalist"""
+    """PDF sahifa header va footer - sodda va professional"""
     canvas.saveState()
     
-    # Header - oddiy chiziq
-    canvas.setStrokeColor(colors.Color(0.2, 0.2, 0.2))
-    canvas.setLineWidth(0.5)
-    canvas.line(1.5*cm, A4[1] - 35, A4[0] - 1.5*cm, A4[1] - 35)
+    page_width, page_height = A4
+    margin = 1.5*cm
     
-    # Brand
-    canvas.setFillColor(colors.Color(0.2, 0.2, 0.2))
-    canvas.setFont('Helvetica-Bold', 10)
-    canvas.drawString(1.5*cm, A4[1] - 28, "TANLOV AI")
+    # ===== SODDA RAMKA =====
+    canvas.setStrokeColor(colors.Color(0.2, 0.45, 0.3))
+    canvas.setLineWidth(1.5)
+    canvas.rect(margin, margin, page_width - 2*margin, page_height - 2*margin)
+    
+    # ===== HEADER =====
+    header_y = page_height - margin - 15
+    
+    # TANLOV AI
+    canvas.setFillColor(colors.Color(0.2, 0.45, 0.3))
+    canvas.setFont('Helvetica-Bold', 12)
+    canvas.drawString(margin + 15, header_y, "TANLOV AI")
     
     # Sana
     canvas.setFont('Helvetica', 9)
-    canvas.drawRightString(A4[0] - 1.5*cm, A4[1] - 28, datetime.now().strftime('%d.%m.%Y'))
+    canvas.setFillColor(colors.Color(0.4, 0.4, 0.4))
+    date_str = datetime.now().strftime('%d.%m.%Y')
+    canvas.drawRightString(page_width - margin - 15, header_y, date_str)
     
-    # Footer - oddiy
-    canvas.setStrokeColor(colors.Color(0.7, 0.7, 0.7))
-    canvas.line(1.5*cm, 35, A4[0] - 1.5*cm, 35)
+    # Header chiziq
+    canvas.setStrokeColor(colors.Color(0.2, 0.45, 0.3))
+    canvas.setLineWidth(0.5)
+    canvas.line(margin + 10, header_y - 10, page_width - margin - 10, header_y - 10)
     
-    canvas.setFillColor(colors.Color(0.5, 0.5, 0.5))
-    canvas.setFont('Helvetica', 8)
-    canvas.drawCentredString(A4[0] / 2, 20, f"{doc.page}")
+    # ===== FOOTER =====
+    footer_y = margin + 15
+    
+    # Footer chiziq
+    canvas.line(margin + 10, footer_y + 8, page_width - margin - 10, footer_y + 8)
+    
+    # Tashkilot nomi
+    canvas.setFillColor(colors.Color(0.4, 0.4, 0.4))
+    canvas.setFont('Helvetica', 7)
+    org_name = "Raqamlashtirish va AKTni joriy qilish boshqarmasi" if language == 'uz' else "Управление цифровизации и внедрения ИКТ"
+    canvas.drawString(margin + 15, footer_y, org_name)
+    
+    # Sahifa raqami
+    canvas.drawRightString(page_width - margin - 15, footer_y, f"{doc.page}")
     
     canvas.restoreState()
 
@@ -466,18 +486,21 @@ def export_pdf(request):
         doc = SimpleDocTemplate(
             buffer, 
             pagesize=A4,
-            rightMargin=2*cm,
-            leftMargin=2*cm,
-            topMargin=50,
-            bottomMargin=50
+            rightMargin=2.5*cm,
+            leftMargin=2.5*cm,
+            topMargin=70,
+            bottomMargin=70
         )
         
-        # Ranglar - Minimalist
+        # Ranglar - Professional
         DARK = colors.Color(0.15, 0.15, 0.15)
         GRAY = colors.Color(0.4, 0.4, 0.4)
-        LIGHT_GRAY = colors.Color(0.95, 0.95, 0.95)
-        ACCENT = colors.Color(0.2, 0.5, 0.3)  # Yashil accent
-        BORDER = colors.Color(0.85, 0.85, 0.85)
+        LIGHT_GRAY = colors.Color(0.96, 0.96, 0.96)
+        PRIMARY = colors.Color(0.2, 0.4, 0.3)  # To'q yashil
+        ACCENT = colors.Color(0.25, 0.5, 0.35)  # Yashil accent
+        LIGHT_GREEN = colors.Color(0.93, 0.97, 0.94)  # Och yashil fon
+        BORDER = colors.Color(0.8, 0.85, 0.8)
+        GOLD = colors.Color(0.85, 0.65, 0.15)  # G'olib uchun oltin rang
         
         # Stillar - bir xil shrift o'lchamlari
         styles = getSampleStyleSheet()
@@ -485,36 +508,36 @@ def export_pdf(request):
         title_style = ParagraphStyle(
             'Title',
             fontSize=18,
-            spaceAfter=20,
-            spaceBefore=10,
+            spaceAfter=8,
+            spaceBefore=0,
             alignment=1,
-            textColor=DARK,
+            textColor=PRIMARY,
             fontName='Helvetica-Bold',
         )
         
         heading_style = ParagraphStyle(
             'Heading',
-            fontSize=12,
-            spaceAfter=12,
-            spaceBefore=20,
-            textColor=DARK,
+            fontSize=11,
+            spaceAfter=6,
+            spaceBefore=10,
+            textColor=PRIMARY,
             fontName='Helvetica-Bold',
         )
         
         normal_style = ParagraphStyle(
             'Normal',
-            fontSize=10,
-            spaceAfter=6,
-            leading=14,
+            fontSize=9,
+            spaceAfter=3,
+            leading=12,
             textColor=DARK,
             fontName='Helvetica',
         )
         
         small_style = ParagraphStyle(
             'Small',
-            fontSize=9,
-            spaceAfter=4,
-            leading=12,
+            fontSize=8,
+            spaceAfter=2,
+            leading=10,
             textColor=GRAY,
             fontName='Helvetica',
         )
@@ -556,54 +579,96 @@ def export_pdf(request):
         
         # Sarlavha
         elements.append(Paragraph(title, title_style))
-        elements.append(Spacer(1, 5))
         
-        # Chiziq
-        elements.append(Table([['']], colWidths=[14*cm], style=TableStyle([
-            ('LINEBELOW', (0, 0), (-1, 0), 1, BORDER),
-        ])))
-        elements.append(Spacer(1, 15))
+        # Dekorativ chiziq sarlavha ostida
+        title_line = Table([['']], colWidths=[13*cm], style=TableStyle([
+            ('LINEBELOW', (0, 0), (-1, 0), 1.5, PRIMARY),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ]))
+        elements.append(title_line)
+        elements.append(Spacer(1, 10))
         
-        # G'olib - eng yuqorida
+        # G'olib - chiroyli ramkali quti
         if winner:
             winner_name = winner.get('participant_name', '-')
             winner_score = winner.get('total_weighted_score') or winner.get('overall_match_percentage', 0)
             
-            winner_box = Table(
-                [[Paragraph(f"<b>{winner_title}:</b> {winner_name}", 
-                           ParagraphStyle('W', fontSize=11, textColor=DARK)),
-                  Paragraph(f"<b>{winner_score:.0f}%</b>", 
-                           ParagraphStyle('W', fontSize=12, textColor=ACCENT, alignment=2))]],
-                colWidths=[10*cm, 4*cm]
-            )
+            # G'olib ikonkasi va nomi
+            trophy_text = "🏆" if language == 'uz' else "🏆"
+            winner_title_text = f"<b>{winner_title}</b>"
+            winner_name_text = f"<font size='12'>{winner_name}</font>"
+            winner_score_text = f"<font size='16' color='#336644'><b>{winner_score:.0f}%</b></font>"
+            
+            winner_content = [
+                [Paragraph(winner_title_text, ParagraphStyle('WT', fontSize=9, textColor=GOLD, alignment=1))],
+                [Paragraph(winner_name_text, ParagraphStyle('WN', fontSize=11, textColor=DARK, alignment=1, spaceBefore=2))],
+                [Paragraph(winner_score_text, ParagraphStyle('WS', fontSize=12, alignment=1, spaceBefore=3))],
+            ]
+            
+            winner_box = Table(winner_content, colWidths=[13*cm])
             winner_box.setStyle(TableStyle([
-                ('BACKGROUND', (0, 0), (-1, -1), colors.Color(0.95, 0.98, 0.95)),
-                ('BOX', (0, 0), (-1, -1), 1, ACCENT),
-                ('PADDING', (0, 0), (-1, -1), 12),
+                ('BACKGROUND', (0, 0), (-1, -1), LIGHT_GREEN),
+                ('BOX', (0, 0), (-1, -1), 1, PRIMARY),
+                ('TOPPADDING', (0, 0), (-1, 0), 8),
+                ('BOTTOMPADDING', (0, -1), (-1, -1), 8),
+                ('LEFTPADDING', (0, 0), (-1, -1), 10),
+                ('RIGHTPADDING', (0, 0), (-1, -1), 10),
                 ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
             ]))
             elements.append(winner_box)
-            elements.append(Spacer(1, 20))
+            elements.append(Spacer(1, 12))
         
-        # Tender ma'lumotlari
+        # Tender ma'lumotlari - chiroyli quti ichida
         if tender_analysis:
-            elements.append(Paragraph(tender_info_title, heading_style))
+            # Bo'lim sarlavhasi
+            section_header = Table(
+                [[Paragraph(f"<b>{tender_info_title}</b>", ParagraphStyle('SH', fontSize=10, textColor=colors.white))]],
+                colWidths=[13*cm]
+            )
+            section_header.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, -1), PRIMARY),
+                ('PADDING', (0, 0), (-1, -1), 5),
+                ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ]))
+            elements.append(section_header)
             
             tender_purpose = tender_analysis.get('tender_purpose', '-')
-            if len(tender_purpose) > 100:
-                tender_purpose = tender_purpose[:100] + '...'
+            if len(tender_purpose) > 150:
+                tender_purpose = tender_purpose[:150] + '...'
             
-            info_text = f"""
-            <b>{purpose_label}:</b> {tender_purpose}<br/>
-            <b>{type_label}:</b> {tender_analysis.get('tender_type', '-')}<br/>
-            <b>{req_count_label}:</b> {tender_analysis.get('requirements_count', 0)} (majburiy: {tender_analysis.get('mandatory_count', 0)})
-            """
-            elements.append(Paragraph(info_text, normal_style))
-            elements.append(Spacer(1, 15))
+            # Ma'lumotlar jadvali
+            info_data = [
+                [Paragraph(f"<b>{purpose_label}:</b>", small_style), Paragraph(tender_purpose, normal_style)],
+                [Paragraph(f"<b>{type_label}:</b>", small_style), Paragraph(str(tender_analysis.get('tender_type', '-')), normal_style)],
+                [Paragraph(f"<b>{req_count_label}:</b>", small_style), 
+                 Paragraph(f"{tender_analysis.get('requirements_count', 0)} (majburiy: {tender_analysis.get('mandatory_count', 0)})", normal_style)],
+            ]
+            
+            info_table = Table(info_data, colWidths=[3*cm, 10*cm])
+            info_table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, -1), LIGHT_GRAY),
+                ('BOX', (0, 0), (-1, -1), 0.5, BORDER),
+                ('LINEABOVE', (0, 1), (-1, -1), 0.5, BORDER),
+                ('PADDING', (0, 0), (-1, -1), 5),
+                ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+            ]))
+            elements.append(info_table)
+            elements.append(Spacer(1, 10))
         
         # Reyting jadvali
         if ranking:
-            elements.append(Paragraph(ranking_title, heading_style))
+            # Bo'lim sarlavhasi
+            section_header2 = Table(
+                [[Paragraph(f"<b>{ranking_title}</b>", ParagraphStyle('SH2', fontSize=10, textColor=colors.white))]],
+                colWidths=[13*cm]
+            )
+            section_header2.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, -1), PRIMARY),
+                ('PADDING', (0, 0), (-1, -1), 5),
+                ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ]))
+            elements.append(section_header2)
             
             # Jadval
             header = ['#', 'Ishtirokchi' if language == 'uz' else 'Участник', score_label, match_label, risk_label]
@@ -619,76 +684,134 @@ def export_pdf(request):
                 row = [str(idx), name, f"{score:.0f}%", f"{p.get('overall_match_percentage', 0)}%", risk]
                 table_data.append(row)
             
-            ranking_table = Table(table_data, colWidths=[1*cm, 7*cm, 2*cm, 2*cm, 2*cm])
+            ranking_table = Table(table_data, colWidths=[1*cm, 6.5*cm, 2*cm, 2*cm, 1.5*cm])
             
             table_style_list = [
                 ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
                 ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
-                ('FONTSIZE', (0, 0), (-1, -1), 9),
-                ('TEXTCOLOR', (0, 0), (-1, 0), DARK),
-                ('TEXTCOLOR', (0, 1), (-1, -1), GRAY),
+                ('FONTSIZE', (0, 0), (-1, -1), 8),
+                ('BACKGROUND', (0, 0), (-1, 0), LIGHT_GRAY),
+                ('TEXTCOLOR', (0, 0), (-1, 0), PRIMARY),
+                ('TEXTCOLOR', (0, 1), (-1, -1), DARK),
                 ('ALIGN', (0, 0), (0, -1), 'CENTER'),
                 ('ALIGN', (2, 0), (-1, -1), 'CENTER'),
                 ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-                ('PADDING', (0, 0), (-1, -1), 8),
-                ('LINEBELOW', (0, 0), (-1, 0), 1, DARK),
-                ('LINEBELOW', (0, 1), (-1, -2), 0.5, BORDER),
+                ('PADDING', (0, 0), (-1, -1), 6),
+                ('BOX', (0, 0), (-1, -1), 0.5, BORDER),
+                ('LINEBELOW', (0, 0), (-1, 0), 1, PRIMARY),
+                ('LINEBELOW', (0, 1), (-1, -2), 0.3, BORDER),
+                ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.Color(0.98, 0.98, 0.98)]),
             ]
             
-            # G'olib qatori
+            # G'olib qatori - maxsus stil
             if len(table_data) > 1:
-                table_style_list.append(('TEXTCOLOR', (0, 1), (-1, 1), DARK))
+                table_style_list.append(('BACKGROUND', (0, 1), (-1, 1), LIGHT_GREEN))
+                table_style_list.append(('TEXTCOLOR', (0, 1), (-1, 1), PRIMARY))
                 table_style_list.append(('FONTNAME', (0, 1), (-1, 1), 'Helvetica-Bold'))
             
             ranking_table.setStyle(TableStyle(table_style_list))
             elements.append(ranking_table)
-            elements.append(Spacer(1, 20))
+            elements.append(Spacer(1, 12))
         
-        # Har bir ishtirokchi haqida qisqacha
+        # Har bir ishtirokchi haqida qisqacha - kartochka ko'rinishida
         if ranking:
+            details_title = "Ishtirokchilar tafsiloti" if language == 'uz' else "Детали участников"
+            section_header3 = Table(
+                [[Paragraph(f"<b>{details_title}</b>", ParagraphStyle('SH3', fontSize=10, textColor=colors.white))]],
+                colWidths=[13*cm]
+            )
+            section_header3.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, -1), PRIMARY),
+                ('PADDING', (0, 0), (-1, -1), 5),
+                ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ]))
+            elements.append(section_header3)
+            elements.append(Spacer(1, 5))
+            
             for idx, p in enumerate(ranking, 1):
                 name = p.get('participant_name', '-')
                 score = p.get('total_weighted_score') or p.get('overall_match_percentage', 0)
-                
-                # Sarlavha
-                elements.append(Paragraph(f"<b>{idx}. {name}</b> - {score:.0f}%", 
-                               ParagraphStyle('PH', fontSize=10, textColor=DARK, spaceBefore=10, spaceAfter=5)))
+                risk = risk_levels.get(p.get('risk_level', 'low'), p.get('risk_level', '-'))
                 
                 # Kuchli tomonlar
                 strengths = p.get('strengths', [])
-                if strengths:
-                    s_text = ', '.join(strengths[:3])
-                    if len(s_text) > 100:
-                        s_text = s_text[:100] + '...'
-                    elements.append(Paragraph(f"+ {s_text}", small_style))
+                s_text = ', '.join(strengths[:3]) if strengths else '-'
+                if len(s_text) > 80:
+                    s_text = s_text[:80] + '...'
                 
                 # Kamchiliklar
                 weaknesses = p.get('weaknesses', [])
-                if weaknesses:
-                    w_text = ', '.join(weaknesses[:3])
-                    if len(w_text) > 100:
-                        w_text = w_text[:100] + '...'
-                    elements.append(Paragraph(f"- {w_text}", small_style))
+                w_text = ', '.join(weaknesses[:3]) if weaknesses else '-'
+                if len(w_text) > 80:
+                    w_text = w_text[:80] + '...'
                 
-                elements.append(Spacer(1, 8))
+                # Participant kartochkasi
+                is_winner = idx == 1
+                card_bg = LIGHT_GREEN if is_winner else colors.white
+                card_border = PRIMARY if is_winner else BORDER
+                
+                card_data = [
+                    [Paragraph(f"<b>{idx}. {name}</b>", ParagraphStyle('CN', fontSize=9, textColor=PRIMARY)), 
+                     Paragraph(f"<b>{score:.0f}%</b>", ParagraphStyle('CS', fontSize=10, textColor=PRIMARY, alignment=2))],
+                    [Paragraph(f"<font color='#336644'>+</font> {s_text}", ParagraphStyle('ST', fontSize=7, textColor=GRAY)), ''],
+                    [Paragraph(f"<font color='#994444'>-</font> {w_text}", ParagraphStyle('WK', fontSize=7, textColor=GRAY)), ''],
+                ]
+                
+                participant_card = Table(card_data, colWidths=[10*cm, 3*cm])
+                participant_card.setStyle(TableStyle([
+                    ('BACKGROUND', (0, 0), (-1, -1), card_bg),
+                    ('BOX', (0, 0), (-1, -1), 0.5, card_border),
+                    ('PADDING', (0, 0), (-1, -1), 4),
+                    ('SPAN', (0, 1), (1, 1)),
+                    ('SPAN', (0, 2), (1, 2)),
+                    ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                    ('TOPPADDING', (0, 0), (-1, 0), 5),
+                    ('BOTTOMPADDING', (0, -1), (-1, -1), 5),
+                ]))
+                elements.append(participant_card)
+                elements.append(Spacer(1, 4))
         
-        # Xulosa
+        # Xulosa - yangi sahifada
         if summary:
-            elements.append(Spacer(1, 10))
-            elements.append(Paragraph(summary_title, heading_style))
+            elements.append(PageBreak())  # 2-sahifadan boshlash
+            
+            section_header4 = Table(
+                [[Paragraph(f"<b>{summary_title}</b>", ParagraphStyle('SH4', fontSize=10, textColor=colors.white))]],
+                colWidths=[13*cm]
+            )
+            section_header4.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, -1), PRIMARY),
+                ('PADDING', (0, 0), (-1, -1), 5),
+                ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ]))
+            elements.append(section_header4)
             
             # Markdown tozalash
             clean_summary = summary.replace('**', '').replace('*', '').replace('#', '').strip()
             
             # Qisqartirish
-            if len(clean_summary) > 1500:
-                clean_summary = clean_summary[:1500] + '...'
+            if len(clean_summary) > 2500:
+                clean_summary = clean_summary[:2500] + '...'
             
-            # Paragraphlarga bo'lish
+            # Xulosa matni - satrlar orasini qisqartirish
+            summary_paragraphs = []
             for line in clean_summary.split('\n'):
                 line = line.strip()
                 if line:
-                    elements.append(Paragraph(line, small_style))
+                    summary_paragraphs.append([Paragraph(line, ParagraphStyle('SUM', fontSize=9, textColor=DARK, leading=11, spaceAfter=1))])
+            
+            if summary_paragraphs:
+                summary_table = Table(summary_paragraphs, colWidths=[13*cm])
+                summary_table.setStyle(TableStyle([
+                    ('BACKGROUND', (0, 0), (-1, -1), LIGHT_GRAY),
+                    ('BOX', (0, 0), (-1, -1), 0.5, BORDER),
+                    ('TOPPADDING', (0, 0), (-1, -1), 6),
+                    ('BOTTOMPADDING', (0, 0), (-1, -1), 2),
+                    ('LEFTPADDING', (0, 0), (-1, -1), 8),
+                    ('RIGHTPADDING', (0, 0), (-1, -1), 8),
+                    ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+                ]))
+                elements.append(summary_table)
         
         # PDF yaratish
         doc.build(elements, onFirstPage=lambda c, d: draw_header_footer(c, d, language), 
