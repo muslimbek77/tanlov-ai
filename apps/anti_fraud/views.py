@@ -36,11 +36,12 @@ def analyze_fraud(request):
         
         # Ishtirokchilar ma'lumotlarini tayyorlash
         participants_text = ""
+        unknown = "Nomalum"
         for i, p in enumerate(participants, 1):
             participants_text += f"""
-Ishtirokchi #{i}: {p.get('name', 'Noma\'lum')}
-- Taklif narxi: {p.get('price', 'Noma\'lum')}
-- Hujjatlar: {p.get('documents', 'Noma\'lum')}
+Ishtirokchi #{i}: {p.get('name', unknown)}
+- Taklif narxi: {p.get('price', unknown)}
+- Hujjatlar: {p.get('documents', unknown)}
 - Qo'shimcha: {p.get('details', '')}
 """
         
