@@ -110,10 +110,25 @@ Backend `.env` faylida:
 ```env
 DEBUG=False
 ALLOWED_HOSTS=tanlov.kuprikqurilish.uz
-CORS_ALLOWED_ORIGINS=https://tanlov.kuprikqurilish.uz
+SECRET_KEY=your-secure-random-key-here
 OPENAI_API_KEY=your-api-key
-SECRET_KEY=your-secret-key
 ```
+
+**CSRF va CORS konfiguratsiyasi** (Django `settings.py` orqali avtomatik):
+```python
+CSRF_TRUSTED_ORIGINS = [
+    "https://tanlov.kuprikqurilish.uz",
+    "http://localhost:8000",
+]
+
+CORS_ALLOWED_ORIGINS = [
+    "https://tanlov.kuprikqurilish.uz",
+    "http://localhost:3000",  # development
+]
+```
+
+> **MUHIM**: Production'da `DEBUG=False` qo'llanilishi kerak!
+> Bu CSRF va SECURE cookies sozlamalarini faollashtiradi.
 
 ### 3. Backend Deploy
 
@@ -177,7 +192,10 @@ sudo certbot renew --dry-run
 
 - [ ] Frontend build qilindi (`npm run build`)
 - [ ] Build fayllari serverga yuklandi
-- [ ] `.env.production` to'g'ri konfiguratsiya qilindi
+- [ ] `.env` production uchun to'g'ri konfiguratsiya qilindi
+- [ ] `DEBUG=False` qilindi (MUHIM!)
+- [ ] `SECRET_KEY` yangilandi
+- [ ] `CSRF_TRUSTED_ORIGINS` to'g'rilandi
 - [ ] Nginx konfiguratsiya fayli yaratildi
 - [ ] SSL sertifikat o'rnatildi
 - [ ] Backend service ishga tushirildi
@@ -185,7 +203,6 @@ sudo certbot renew --dry-run
 - [ ] Database migration qilindi (`python manage.py migrate`)
 - [ ] CORS settings to'g'rilandi
 - [ ] ALLOWED_HOSTS yangilandi
-- [ ] DEBUG=False qilindi
 
 ### 6. Monitoring va Logs
 
