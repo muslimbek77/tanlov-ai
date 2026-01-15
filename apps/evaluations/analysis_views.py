@@ -380,7 +380,13 @@ def full_analysis(request):
             'participants_analysis': [],
             'ranking': [],
             'winner': None,
-            'summary': ''
+            'summary': '',
+            'progress': {
+                'step': 'init',
+                'current': 0,
+                'total': 1,
+                'status': 'Tender tahlili boshlanmoqda'
+            }
         }
         
         # 1. Tender tahlili
@@ -391,26 +397,47 @@ def full_analysis(request):
             tender_text = request.data.get('tender_text', '')
         
         if not tender_text.strip():
+            results['progress'] = {
+                'step': 'tender_error',
+                'current': 0,
+                'total': 1,
+                'status': 'Tender fayli yoki matni talab qilinmadi'
+            }
             return Response({
                 'success': False,
-                'error': 'Tender fayli yoki matni talab qilinadi'
+                'error': 'Tender fayli yoki matni talab qilinadi',
+                'progress': results['progress']
             }, status=status.HTTP_400_BAD_REQUEST)
         
         # Har doim yangi tender tahlil obyektini yaratamiz
         from core.tender_analyzer import TenderAnalyzer
         global tender_analyzer
         tender_analyzer = TenderAnalyzer()
+        results['progress'] = {
+            'step': 'tender_analysis',
+            'current': 1,
+            'total': 1,
+            'status': 'Tender tahlili yakunlandi'
+        }
         tender_result = tender_analyzer.analyze_tender_document(tender_text)
         if not tender_result['success']:
-            return Response(tender_result, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        results['tender_analysis'] = tender_result['analysis']
+            results['progress'] = {
+                'step': 'tender_error',
+                'current': 1,
+                'total': 1,
+                'status': 'Tender tahlilida xatolik'
+            }
+            return Response({**tender_result, 'progress': results['progress']}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        # To'liq tender tahlilini saqlaymiz (requirements va boshqa maydonlar bilan)
+        full_tender_analysis = tender_result['analysis'] if 'analysis' in tender_result else tender_result
+        results['tender_analysis'] = full_tender_analysis
         
         # 2. Ishtirokchilar tahlili
         participants_data = request.data.get('participants', [])
-        
-        # Ishtirokchilarni yig'ish (fayl va JSON birga, dublikatlarsiz)
         participant_names = set()
         participant_counter = 1
+        total_participants = len([k for k in request.FILES if k.startswith('participant_')]) + len(participants_data)
+        current_participant = 0
         # Fayldan
         for key in request.FILES:
             if key.startswith('participant_'):
@@ -421,13 +448,24 @@ def full_analysis(request):
                 file = request.FILES[key]
                 text = extract_text_from_file(file)
                 if text.strip():
-                    # Har bir ishtirokchi uchun tender tahlilini tiklash
-                    tender_analyzer.restore_tender_analysis(results['tender_analysis'])
+                    tender_analyzer.restore_tender_analysis(full_tender_analysis)
                     participant_result = tender_analyzer.analyze_participant(name, text)
                     if participant_result['success']:
-                        results['participants_analysis'].append(participant_result['analysis'])
+                        analysis = participant_result['analysis']
+                        # Ensure risk_level is always present
+                        if 'risk_level' not in analysis:
+                            risk = analysis.get('risk_assessment', {}).get('overall_risk', 'unknown')
+                            analysis['risk_level'] = risk
+                        results['participants_analysis'].append(analysis)
                         participant_names.add(name)
                         participant_counter += 1
+                current_participant += 1
+                results['progress'] = {
+                    'step': 'participant',
+                    'current': current_participant,
+                    'total': total_participants,
+                    'status': f'{name} tahlil qilindi'
+                }
         # JSON dan
         for p in participants_data:
             name = p.get('name', '').strip()
@@ -435,26 +473,56 @@ def full_analysis(request):
                 name = f'Ishtirokchi {participant_counter}'
             text = p.get('text', '')
             if text.strip():
-                # Har bir ishtirokchi uchun tender tahlilini tiklash
-                tender_analyzer.restore_tender_analysis(results['tender_analysis'])
+                tender_analyzer.restore_tender_analysis(full_tender_analysis)
                 participant_result = tender_analyzer.analyze_participant(name, text)
                 if participant_result['success']:
-                    results['participants_analysis'].append(participant_result['analysis'])
+                    analysis = participant_result['analysis']
+                    if 'risk_level' not in analysis:
+                        risk = analysis.get('risk_assessment', {}).get('overall_risk', 'unknown')
+                        analysis['risk_level'] = risk
+                    results['participants_analysis'].append(analysis)
                     participant_names.add(name)
                     participant_counter += 1
+            current_participant += 1
+            results['progress'] = {
+                'step': 'participant',
+                'current': current_participant,
+                'total': total_participants,
+                'status': f'{name} tahlil qilindi'
+            }
         
         # 3. Solishtirish
         if len(results['participants_analysis']) < 2:
             error_msg = 'Reyting yaratish uchun kamida 2 ta ishtirokchi kerak. Hozircha {} ta tahlil qilingan. Yana ishtirokchi qo\'shing.'.format(len(results['participants_analysis']))
+            results['progress'] = {
+                'step': 'compare_error',
+                'current': current_participant,
+                'total': total_participants,
+                'status': error_msg
+            }
             return Response({
                 'success': False,
-                'error': error_msg
+                'error': error_msg,
+                'progress': results['progress']
             }, status=status.HTTP_400_BAD_REQUEST)
         compare_result = tender_analyzer.compare_participants(results['participants_analysis'])
         if compare_result['success']:
             results['ranking'] = compare_result['ranking']
             results['winner'] = compare_result['winner']
             results['summary'] = compare_result['summary']
+            results['progress'] = {
+                'step': 'done',
+                'current': current_participant,
+                'total': total_participants,
+                'status': 'Tahlil yakunlandi'
+            }
+        else:
+            results['progress'] = {
+                'step': 'compare_error',
+                'current': current_participant,
+                'total': total_participants,
+                'status': compare_result.get('error', 'Solishtirishda xatolik')
+            }
         return Response(results, status=status.HTTP_200_OK)
         
     except Exception as e:
