@@ -107,9 +107,36 @@ def analyze_tender(request):
         # Fayldan yoki matndan olish
         if 'file' in request.FILES:
             file = request.FILES['file']
+            allowed_ext = ['.pdf', '.docx', '.txt']
+            ext = os.path.splitext(file.name)[1].lower()
+            if ext not in allowed_ext:
+                error_msg = 'Faqat PDF, DOCX yoki TXT fayl yuklang' if language == 'uz' else 'Загрузите только PDF, DOCX или TXT файл'
+                return Response({
+                    'success': False,
+                    'error': error_msg
+                }, status=status.HTTP_400_BAD_REQUEST)
             tender_text = extract_text_from_file(file)
             metadata['filename'] = file.name
             metadata['file_size'] = file.size
+        # Mazmun va mantiqiy tekshiruv (GPT orqali)
+        if tender_text.strip():
+            from core.llm_engine import llm_engine
+            check_prompt = f"""
+Quyidagi matn tender shartnomasi yoki unga o'xshash rasmiy hujjatmi? Mazmunan va mantiqan to'g'ri, to'liq va tahlil qilishga yaroqlimi? Faqat 'HA' yoki 'YO' deb javob ber:
+
+{tender_text[:2000]}
+"""
+            check_result = llm_engine.generate_response(check_prompt, system_prompt="Faqat 'HA' yoki 'YO' deb javob ber.", temperature=0.0)
+            if isinstance(check_result, dict):
+                check_response = check_result.get('response', '').strip().upper()
+            else:
+                check_response = str(check_result).strip().upper()
+            if 'YO' in check_response:
+                error_msg = "Yuklangan fayl mazmunan yoki mantiqan noto'g'ri. Iltimos, to'g'ri tender faylini yuklang." if language == 'uz' else "Загруженный файл не соответствует содержанию тендера. Пожалуйста, загрузите правильный файл."
+                return Response({
+                    'success': False,
+                    'error': error_msg
+                }, status=status.HTTP_400_BAD_REQUEST)
         elif 'text' in request.data:
             tender_text = request.data.get('text', '')
         else:
@@ -154,6 +181,7 @@ def analyze_tender(request):
 
 
 @api_view(['POST'])
+@permission_classes([AllowAny])
 def analyze_participant(request):
     """
     Ishtirokchi hujjatlarini tahlil qilish
@@ -203,9 +231,36 @@ def analyze_participant(request):
         # Fayldan yoki matndan olish
         if 'file' in request.FILES:
             file = request.FILES['file']
+            allowed_ext = ['.pdf', '.docx', '.txt']
+            ext = os.path.splitext(file.name)[1].lower()
+            if ext not in allowed_ext:
+                error_msg = 'Faqat PDF, DOCX yoki TXT fayl yuklang' if language == 'uz' else 'Загрузите только PDF, DOCX или TXT файл'
+                return Response({
+                    'success': False,
+                    'error': error_msg
+                }, status=status.HTTP_400_BAD_REQUEST)
             participant_text = extract_text_from_file(file)
             metadata['filename'] = file.name
             metadata['file_size'] = file.size
+        # Mazmun va mantiqiy tekshiruv (GPT orqali)
+        if participant_text.strip():
+            from core.llm_engine import llm_engine
+            check_prompt = f"""
+Quyidagi matn ishtirokchi hujjatlari yoki unga o'xshash rasmiy hujjatmi? Mazmunan va mantiqan to'g'ri, to'liq va tahlil qilishga yaroqlimi? Faqat 'HA' yoki 'YO' deb javob ber:
+
+{participant_text[:2000]}
+"""
+            check_result = llm_engine.generate_response(check_prompt, system_prompt="Faqat 'HA' yoki 'YO' deb javob ber.", temperature=0.0)
+            if isinstance(check_result, dict):
+                check_response = check_result.get('response', '').strip().upper()
+            else:
+                check_response = str(check_result).strip().upper()
+            if 'YO' in check_response:
+                error_msg = "Yuklangan fayl mazmunan yoki mantiqan noto'g'ri. Iltimos, to'g'ri ishtirokchi faylini yuklang." if language == 'uz' else "Загруженный файл не соответствует содержанию участника. Пожалуйста, загрузите правильный файл."
+                return Response({
+                    'success': False,
+                    'error': error_msg
+                }, status=status.HTTP_400_BAD_REQUEST)
         elif 'text' in request.data:
             participant_text = request.data.get('text', '')
         else:
@@ -296,6 +351,7 @@ def compare_participants(request):
 
 @api_view(['POST'])
 def full_analysis(request):
+@permission_classes([AllowAny])
     """
     To'liq tahlil - tender + barcha ishtirokchilar
     
@@ -1238,6 +1294,7 @@ def download_excel(request):
 
 @api_view(['POST'])
 def download_csv(request):
+@permission_classes([AllowAny])
     """
     Tahlil natijasini CSV formatida yuklab olish
     
