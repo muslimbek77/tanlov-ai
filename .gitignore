@@ -10,7 +10,8 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
+# Python lib/ (not frontend/src/lib/)
+/lib/
 lib64/
 parts/
 sdist/
@@ -72,7 +73,8 @@ frontend/build/
 .env.development.local
 .env.test.local
 .env.production.local
-*.env
+
+# Note: .env.development and .env.production are tracked for default configs
 
 # Logs
 logs/
