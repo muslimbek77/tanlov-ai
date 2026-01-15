@@ -579,6 +579,17 @@ ODDIY JSON qaytar:
             }
     
     def compare_participants(self, participants: List[Dict[str, Any]], language: str = 'uz') -> Dict[str, Any]:
+        # Kamida 2 ta ishtirokchi bo'lishi shart
+        if len(participants) < 2:
+            error_msg = (
+                "Reyting yaratish uchun kamida 2 ta ishtirokchi kerak. Hozircha {} ta tahlil qilingan. Yana ishtirokchi qo'shing.".format(len(participants))
+                if language == 'uz' else
+                "Для создания рейтинга нужно минимум 2 участника. Сейчас только {}. Добавьте еще участника.".format(len(participants))
+            )
+            return {
+                'success': False,
+                'error': error_msg
+            }
         """
         Barcha ishtirokchilarni solishtirish va reyting tuzish
         
