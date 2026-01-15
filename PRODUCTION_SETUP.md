@@ -209,22 +209,26 @@ sudo systemctl restart tanlov
 
 **Sabab**: Production database'da user'ning password hash'i boshqacha yoki user mavjud emas
 
-**Yechim - Server'da qilish:**
+**Tez Yechim - Server'da Shell:**
 
 ```bash
-# 1. Lokal reset_production_user.sh download qilish
-wget https://raw.githubusercontent.com/your-repo/tanlov-ai/muslim/reset_production_user.sh
-chmod +x reset_production_user.sh
-
-# 2. Yoki direct shell'da:
 cd /var/www/tanlov/backend
 source venv/bin/activate
 
+# 1. Mavjud userlarni ko'rish
+python manage.py shell << 'EOF'
+from apps.users.models import User
+users = User.objects.all()
+for u in users:
+    print(f"  - {u.username} ({u.email})")
+EOF
+
+# 2. AGAR USER TOPILMASA - User yaratish
 python manage.py shell << 'EOF'
 from apps.users.models import User
 
-# O'zgarish
 User.objects.filter(username='trest').delete()
+
 user = User.objects.create_user(
     username='trest',
     email='trest@example.com',
@@ -235,11 +239,36 @@ user = User.objects.create_user(
     is_staff=True,
     is_superuser=True
 )
-print(f"✅ User reset: {user.username}")
+print(f"✅ User created: {user.username}")
 EOF
 
-# 3. Service restart
+# 3. AGAR USER MAVJUD LEKIN PAROL NOTO'G'RI - Reset qilish
+python manage.py changepassword trest
+# Yoki shell'da:
+python manage.py shell << 'EOF'
+from apps.users.models import User
+user = User.objects.get(username='trest')
+user.set_password('trest2026')
+user.save()
+print(f"✅ Password reset")
+EOF
+
+# 4. Service restart
 sudo systemctl restart tanlov
+```
+
+**Automatic Script'dan foydalanish:**
+
+Lokal'dagi `init_production_db.sh` ni server'ga copy qilish:
+
+```bash
+# Lokal'dagi tanlov-ai folder'dan
+scp init_production_db.sh user@tanlov.kuprikqurilish.uz:/tmp/
+
+# Server'da run qilish
+ssh user@tanlov.kuprikqurilish.uz
+chmod +x /tmp/init_production_db.sh
+/tmp/init_production_db.sh /var/www/tanlov/backend
 ```
 
 **Test:**
