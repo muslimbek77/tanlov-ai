@@ -312,20 +312,21 @@ const TenderAnalysis: React.FC = () => {
   // Barcha ishtirokchilarni tahlil qilish
   const analyzeParticipants = async () => {
     const validParticipants = participantFiles.filter(p => p.file && p.name)
+    const minParticipants = getMinParticipants()
     
     console.log('=== ANALYZE PARTICIPANTS ===')
     console.log('participantFiles:', participantFiles)
     console.log('validParticipants:', validParticipants)
     console.log('participantAnalyses:', participantAnalyses)
+    console.log('minParticipants:', minParticipants)
     
     // Yangi ishtirokchilar bo'lmasa va avvalgisi bor bo'lsa - faqat solishtirish
     if (validParticipants.length === 0 && participantAnalyses.length > 0) {
       // Minimal ishtirokchilar sonini tekshirish
-      const minParticipants = getMinParticipants()
       if (participantAnalyses.length < minParticipants) {
         setError(language === 'uz' 
-          ? `Reyting yaratish uchun kamida ${minParticipants} ta ishtirokchi kerak. Hozircha ${participantAnalyses.length} ta tahlil qilingan.`
-          : `Для создания рейтинга необходимо минимум ${minParticipants} участника. Сейчас проанализировано ${participantAnalyses.length}.`)
+          ? `Reyting yaratish uchun kamida ${minParticipants} ta ishtirokchi kerak. Hozircha ${participantAnalyses.length} ta tahlil qilingan. ${minParticipants - participantAnalyses.length} ta boshqasini qo'shing.`
+          : `Для создания рейтинга необходимо минимум ${minParticipants} участника. Сейчас проанализировано ${participantAnalyses.length}. Добавьте еще ${minParticipants - participantAnalyses.length}.`)
         return
       }
       
@@ -345,9 +346,13 @@ const TenderAnalysis: React.FC = () => {
           setWinner(compareData.winner)
           setSummary(compareData.summary)
           setStep('results')
+          localStorage.setItem('current_analysis_step', 'results')
+        } else {
+          setError(compareData.error || (language === 'uz' ? 'Solishtirish xatosi' : 'Ошибка сравнения'))
         }
       } catch (err) {
-        setError(t('analysis.error_analysis'))
+        console.error('Compare error:', err)
+        setError(language === 'uz' ? 'Server bilan aloqa xatosi' : 'Ошибка соединения с сервером')
       } finally {
         setLoading(false)
       }
@@ -355,7 +360,9 @@ const TenderAnalysis: React.FC = () => {
     }
     
     if (validParticipants.length === 0) {
-      setError(t('analysis.at_least_one'))
+      setError(language === 'uz'
+        ? `Hech bo'lmaganda bitta ishtirokchi faylini yuklang.`
+        : `Загрузите хотя бы один файл участника.`)
       return
     }
 
@@ -414,14 +421,14 @@ const TenderAnalysis: React.FC = () => {
       const minParticipants = getMinParticipants()
       if (analyses.length < minParticipants) {
         setError(language === 'uz' 
-          ? `Reyting yaratish uchun kamida ${minParticipants} ta ishtirokchi kerak. Hozircha ${analyses.length} ta tahlil qilingan.`
-          : `Для создания рейтинга необходимо минимум ${minParticipants} участника. Сейчас проанализировано ${analyses.length}.`)
+          ? `Reyting yaratish uchun kamida ${minParticipants} ta ishtirokchi kerak. Hozircha ${analyses.length} ta tahlil qilingan. ${minParticipants - analyses.length} ta boshqasini qo'shing.`
+          : `Для создания рейтинга необходимо минимум ${minParticipants} участника. Сейчас проанализировано ${analyses.length}. Добавьте еще ${minParticipants - analyses.length}.`)
         setLoading(false)
         return
       }
 
       // Solishtirish
-      if (analyses.length > 0) {
+      if (analyses.length >= minParticipants) {
         const compareResponse = await fetch(`${API_BASE}/compare-participants/`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -862,7 +869,7 @@ const TenderAnalysis: React.FC = () => {
                 ))}
                 
                 {/* Qo'shimcha ishtirokchi qo'shish tugmasi */}
-                {participantFiles.length > 0 && participantFiles[participantFiles.length - 1]?.file && (
+                {participantFiles.length < 10 && (
                   <Button 
                     variant="outline" 
                     size="sm" 
@@ -870,14 +877,14 @@ const TenderAnalysis: React.FC = () => {
                     className="w-full"
                   >
                     <Plus className="w-4 h-4 mr-1" />
-                    Yana ishtirokchi qo'shish
+                    {language === 'uz' ? 'Yana ishtirokchi qo\'shish' : 'Добавить участника'}
                   </Button>
                 )}
               </div>
 
               <Button 
                 onClick={analyzeParticipants} 
-                disabled={(participantFiles.filter(p => p.file && p.name).length === 0 && participantAnalyses.length === 0) || loading}
+                disabled={loading}
                 className="w-full"
                 size="lg"
               >
