@@ -617,6 +617,11 @@ def draw_header_footer(canvas, doc, language='uz'):
 
 
 @api_view(['POST'])
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
 def export_pdf(request):
     """
     Tahlil natijalarini PDF formatida eksport qilish - Minimalist dizayn
