@@ -405,26 +405,29 @@ def full_analysis(request):
         # 2. Ishtirokchilar tahlili
         participants_data = request.data.get('participants', [])
         
-        # Fayllardan ishtirokchilarni olish
+        # Ishtirokchilarni yig'ish (fayl va JSON birga, dublikatlarsiz)
+        participant_names = set()
+        # Fayldan
         for key in request.FILES:
             if key.startswith('participant_'):
                 idx = key.replace('participant_', '').replace('_file', '')
                 name = request.data.get(f'participant_{idx}_name', f'Ishtirokchi {idx}')
                 file = request.FILES[key]
                 text = extract_text_from_file(file)
-                
-                participant_result = tender_analyzer.analyze_participant(name, text)
-                if participant_result['success']:
-                    results['participants_analysis'].append(participant_result['analysis'])
-        
-        # JSON dan ishtirokchilarni olish
+                if name not in participant_names and text.strip():
+                    participant_result = tender_analyzer.analyze_participant(name, text)
+                    if participant_result['success']:
+                        results['participants_analysis'].append(participant_result['analysis'])
+                        participant_names.add(name)
+        # JSON dan
         for p in participants_data:
             name = p.get('name', 'Noma\'lum')
             text = p.get('text', '')
-            if text:
+            if name not in participant_names and text.strip():
                 participant_result = tender_analyzer.analyze_participant(name, text)
                 if participant_result['success']:
                     results['participants_analysis'].append(participant_result['analysis'])
+                    participant_names.add(name)
         
         # 3. Solishtirish
         if results['participants_analysis']:
