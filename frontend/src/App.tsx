@@ -5,6 +5,7 @@ import Layout from './components/Layout'
 import Login from './pages/Login'
 import DashboardSimple from './pages/DashboardSimple'
 import TenderAnalysis from './pages/TenderAnalysis'
+import AnalysisHistory from './pages/AnalysisHistory'
 import Settings from './pages/Settings'
 import './index.css'
 
@@ -40,6 +41,7 @@ function App() {
                 <Routes>
                   <Route path="/" element={<DashboardSimple />} />
                   <Route path="/analysis" element={<TenderAnalysis />} />
+                  <Route path="/history" element={<AnalysisHistory />} />
                   <Route path="/settings" element={<Settings />} />
                 </Routes>
               </Layout>

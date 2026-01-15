@@ -36,6 +36,9 @@ trap cleanup SIGINT SIGTERM
 start_backend() {
     echo -e "${YELLOW}[1/3] Backend serverini ishga tushirish...${NC}"
     
+    # Proxy o'zgaruvchilarni o'chirish (agar bor bo'lsa)
+    unset http_proxy https_proxy HTTP_PROXY HTTPS_PROXY ALL_PROXY
+    
     # Eski jarayonlarni to'xtatish
     pkill -f "manage.py runserver" 2>/dev/null || true
     sleep 1

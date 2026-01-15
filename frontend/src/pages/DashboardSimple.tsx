@@ -36,7 +36,21 @@ const DashboardSimple: React.FC = () => {
     }
     
     window.addEventListener('analysisDeleted', handleAnalysisDeleted)
-    return () => window.removeEventListener('analysisDeleted', handleAnalysisDeleted)
+    
+    // LocalStorage change listener (cross-tab/cross-component)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'tender_analysis_history') {
+        console.log('Analysis history changed, refreshing stats...')
+        fetchStats()
+      }
+    }
+    
+    window.addEventListener('storage', handleStorageChange)
+    
+    return () => {
+      window.removeEventListener('analysisDeleted', handleAnalysisDeleted)
+      window.removeEventListener('storage', handleStorageChange)
+    }
   }, [])
 
   const fetchStats = async () => {
