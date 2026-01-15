@@ -28,6 +28,15 @@ const DashboardSimple: React.FC = () => {
 
   useEffect(() => {
     fetchStats()
+    
+    // Analysis deleted event listener
+    const handleAnalysisDeleted = () => {
+      console.log('Analysis deleted, refreshing stats...')
+      fetchStats()
+    }
+    
+    window.addEventListener('analysisDeleted', handleAnalysisDeleted)
+    return () => window.removeEventListener('analysisDeleted', handleAnalysisDeleted)
   }, [])
 
   const fetchStats = async () => {

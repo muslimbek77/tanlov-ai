@@ -221,7 +221,23 @@ const TenderAnalysis: React.FC = () => {
     setShowHistory(false)
   }
 
-  const deleteSavedResult = (id: number) => {
+  const deleteSavedResult = async (id: number) => {
+    try {
+      // Server'dan o'chirish
+      const response = await fetch(`${API_BASE}/history/${id}/delete/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      })
+      
+      if (response.ok) {
+        // Dashboard'ni refresh qilish uchun signal yuborish
+        window.dispatchEvent(new CustomEvent('analysisDeleted', { detail: { id } }))
+      }
+    } catch (err) {
+      console.error('Delete error:', err)
+    }
+    
+    // LocalStorage'dan o'chirish
     const updated = savedResults.filter(r => r.id !== id)
     setSavedResults(updated)
     localStorage.setItem('tender_analysis_history', JSON.stringify(updated))
@@ -445,8 +461,9 @@ const TenderAnalysis: React.FC = () => {
           localStorage.setItem('current_analysis_step', 'results')
           
           // Bazaga saqlash
+          let serverId: number | null = null
           try {
-            await fetch(`${API_BASE}/save-result/`, {
+            const saveResponse = await fetch(`${API_BASE}/save-result/`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -458,6 +475,10 @@ const TenderAnalysis: React.FC = () => {
                 language
               })
             })
+            const saveData = await saveResponse.json()
+            if (saveData.success) {
+              serverId = saveData.id
+            }
           } catch (saveErr) {
             console.error('Bazaga saqlashda xatolik:', saveErr)
           }
@@ -465,7 +486,7 @@ const TenderAnalysis: React.FC = () => {
           // LocalStorage'ga ham saqlash (backup)
           setTimeout(() => {
             const result = {
-              id: Date.now(),
+              id: serverId || Date.now(),
               date: new Date().toISOString(),
               tender: tenderAnalysis?.tender_purpose || (language === 'uz' ? 'Noma\'lum tender' : 'Неизвестный тендер'),
               winner: compareData.winner?.participant_name || (language === 'uz' ? 'Noma\'lum' : 'Неизвестно'),

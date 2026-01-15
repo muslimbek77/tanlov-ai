@@ -990,11 +990,13 @@ def get_analysis_detail(request, pk):
 
 
 @api_view(['DELETE'])
+@api_view(['DELETE', 'POST'])
 def delete_analysis_result(request, pk):
     """
     Tahlil natijasini o'chirish
     
     DELETE /api/evaluations/history/<id>/
+    POST /api/evaluations/history/<id>/delete/
     """
     try:
         result = TenderAnalysisResult.objects.get(pk=pk)
