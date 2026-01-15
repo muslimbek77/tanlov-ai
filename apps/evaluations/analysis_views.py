@@ -421,6 +421,8 @@ def full_analysis(request):
                 file = request.FILES[key]
                 text = extract_text_from_file(file)
                 if text.strip():
+                    # Har bir ishtirokchi uchun tender tahlilini tiklash
+                    tender_analyzer.restore_tender_analysis(results['tender_analysis'])
                     participant_result = tender_analyzer.analyze_participant(name, text)
                     if participant_result['success']:
                         results['participants_analysis'].append(participant_result['analysis'])
@@ -433,6 +435,8 @@ def full_analysis(request):
                 name = f'Ishtirokchi {participant_counter}'
             text = p.get('text', '')
             if text.strip():
+                # Har bir ishtirokchi uchun tender tahlilini tiklash
+                tender_analyzer.restore_tender_analysis(results['tender_analysis'])
                 participant_result = tender_analyzer.analyze_participant(name, text)
                 if participant_result['success']:
                     results['participants_analysis'].append(participant_result['analysis'])
