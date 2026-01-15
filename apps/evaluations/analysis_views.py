@@ -5,9 +5,10 @@ Tender shartnomasi va ishtirokchilarni tahlil qilish uchun API endpointlar.
 """
 
 from rest_framework import viewsets, status
-from rest_framework.decorators import api_view, action
+from rest_framework.decorators import api_view, action, permission_classes
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
+from rest_framework.permissions import AllowAny
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
 from django.http import HttpResponse
@@ -81,6 +82,7 @@ def extract_text_from_file(file) -> str:
 
 
 @api_view(['POST'])
+@permission_classes([AllowAny])
 def analyze_tender(request):
     """
     Tender shartnomasini tahlil qilish
