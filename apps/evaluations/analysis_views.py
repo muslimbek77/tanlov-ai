@@ -430,13 +430,17 @@ def full_analysis(request):
                     participant_names.add(name)
         
         # 3. Solishtirish
-        if results['participants_analysis']:
-            compare_result = tender_analyzer.compare_participants(results['participants_analysis'])
-            if compare_result['success']:
-                results['ranking'] = compare_result['ranking']
-                results['winner'] = compare_result['winner']
-                results['summary'] = compare_result['summary']
-        
+        if len(results['participants_analysis']) < 2:
+            error_msg = 'Reyting yaratish uchun kamida 2 ta ishtirokchi kerak. Hozircha {} ta tahlil qilingan. Yana ishtirokchi qo\'shing.'.format(len(results['participants_analysis']))
+            return Response({
+                'success': False,
+                'error': error_msg
+            }, status=status.HTTP_400_BAD_REQUEST)
+        compare_result = tender_analyzer.compare_participants(results['participants_analysis'])
+        if compare_result['success']:
+            results['ranking'] = compare_result['ranking']
+            results['winner'] = compare_result['winner']
+            results['summary'] = compare_result['summary']
         return Response(results, status=status.HTTP_200_OK)
         
     except Exception as e:
