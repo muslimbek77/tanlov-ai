@@ -205,6 +205,50 @@ DEBUG=False
 sudo systemctl restart tanlov
 ```
 
+### Login Masalasi - Password Noto'g'ri
+
+**Sabab**: Production database'da user'ning password hash'i boshqacha yoki user mavjud emas
+
+**Yechim - Server'da qilish:**
+
+```bash
+# 1. Lokal reset_production_user.sh download qilish
+wget https://raw.githubusercontent.com/your-repo/tanlov-ai/muslim/reset_production_user.sh
+chmod +x reset_production_user.sh
+
+# 2. Yoki direct shell'da:
+cd /var/www/tanlov/backend
+source venv/bin/activate
+
+python manage.py shell << 'EOF'
+from apps.users.models import User
+
+# O'zgarish
+User.objects.filter(username='trest').delete()
+user = User.objects.create_user(
+    username='trest',
+    email='trest@example.com',
+    password='trest2026',
+    first_name='Test',
+    last_name='User',
+    role='admin',
+    is_staff=True,
+    is_superuser=True
+)
+print(f"✅ User reset: {user.username}")
+EOF
+
+# 3. Service restart
+sudo systemctl restart tanlov
+```
+
+**Test:**
+```bash
+curl -X POST https://tanlov.kuprikqurilish.uz/api/auth/login/ \
+  -H "Content-Type: application/json" \
+  -d '{"username": "trest", "password": "trest2026"}'
+```
+
 ---
 
 **Mukhim**: Production'da test qilish uchun:
