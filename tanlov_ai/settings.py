@@ -10,7 +10,13 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-change-me-in-production')
 
 DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
 
-ALLOWED_HOSTS = ['*']
+# ALLOWED_HOSTS - environment va DEBUG'dan ko'zqarash
+ALLOWED_HOSTS_STR = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1')
+ALLOWED_HOSTS = ALLOWED_HOSTS_STR.split(',') if ALLOWED_HOSTS_STR else ['*']
+
+# Production'da '*' ishlatmang, specifikni qo'l ko'ring
+if not DEBUG and '*' in ALLOWED_HOSTS:
+    ALLOWED_HOSTS = ALLOWED_HOSTS_STR.split(',') if ALLOWED_HOSTS_STR else ['localhost']
 
 DJANGO_APPS = [
     'django.contrib.admin',
@@ -182,10 +188,28 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:5175",
     "http://localhost:8080",
     "http://127.0.0.1:8080",
+    "https://tanlov.kuprikqurilish.uz",
 ]
 
 CORS_ALLOW_ALL_ORIGINS = DEBUG  # Development uchun barcha originsga ruxsat
 CORS_ALLOW_CREDENTIALS = True
+
+# CSRF Configuration
+CSRF_TRUSTED_ORIGINS = [
+    "https://tanlov.kuprikqurilish.uz",
+    "http://localhost:8000",
+    "http://127.0.0.1:8000",
+]
+
+# Production uchun CSRF va SECURE sozlamalar
+if not DEBUG:
+    CSRF_COOKIE_SECURE = True
+    CSRF_COOKIE_HTTPONLY = False  # JavaScript'dan kirish uchun zarur
+    SESSION_COOKIE_SECURE = True
+    SECURE_SSL_REDIRECT = True
+    SECURE_HSTS_SECONDS = 31536000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
 
 # Celery Configuration
 CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL', 'redis://localhost:6379/0')
