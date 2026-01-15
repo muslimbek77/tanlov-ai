@@ -396,10 +396,13 @@ def full_analysis(request):
                 'error': 'Tender fayli yoki matni talab qilinadi'
             }, status=status.HTTP_400_BAD_REQUEST)
         
+        # Har doim yangi tender tahlil obyektini yaratamiz
+        from core.tender_analyzer import TenderAnalyzer
+        global tender_analyzer
+        tender_analyzer = TenderAnalyzer()
         tender_result = tender_analyzer.analyze_tender_document(tender_text)
         if not tender_result['success']:
             return Response(tender_result, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        
         results['tender_analysis'] = tender_result['analysis']
         
         # 2. Ishtirokchilar tahlili
@@ -407,27 +410,34 @@ def full_analysis(request):
         
         # Ishtirokchilarni yig'ish (fayl va JSON birga, dublikatlarsiz)
         participant_names = set()
+        participant_counter = 1
         # Fayldan
         for key in request.FILES:
             if key.startswith('participant_'):
                 idx = key.replace('participant_', '').replace('_file', '')
-                name = request.data.get(f'participant_{idx}_name', f'Ishtirokchi {idx}')
+                name = request.data.get(f'participant_{idx}_name', '').strip()
+                if not name or name in participant_names:
+                    name = f'Ishtirokchi {participant_counter}'
                 file = request.FILES[key]
                 text = extract_text_from_file(file)
-                if name not in participant_names and text.strip():
+                if text.strip():
                     participant_result = tender_analyzer.analyze_participant(name, text)
                     if participant_result['success']:
                         results['participants_analysis'].append(participant_result['analysis'])
                         participant_names.add(name)
+                        participant_counter += 1
         # JSON dan
         for p in participants_data:
-            name = p.get('name', 'Noma\'lum')
+            name = p.get('name', '').strip()
+            if not name or name in participant_names:
+                name = f'Ishtirokchi {participant_counter}'
             text = p.get('text', '')
-            if name not in participant_names and text.strip():
+            if text.strip():
                 participant_result = tender_analyzer.analyze_participant(name, text)
                 if participant_result['success']:
                     results['participants_analysis'].append(participant_result['analysis'])
                     participant_names.add(name)
+                    participant_counter += 1
         
         # 3. Solishtirish
         if len(results['participants_analysis']) < 2:
