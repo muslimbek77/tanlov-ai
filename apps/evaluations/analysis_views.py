@@ -307,6 +307,7 @@ Quyidagi matn ishtirokchi hujjatlari yoki unga o'xshash rasmiy hujjatmi? Mazmuna
 
 
 @api_view(['POST'])
+@permission_classes([AllowAny])
 def compare_participants(request):
     """
     Ishtirokchilarni solishtirish
@@ -350,8 +351,8 @@ def compare_participants(request):
 
 
 @api_view(['POST'])
-def full_analysis(request):
 @permission_classes([AllowAny])
+def full_analysis(request):
     """
     To'liq tahlil - tender + barcha ishtirokchilar
     
@@ -902,6 +903,7 @@ from .models import TenderAnalysisResult
 
 
 @api_view(['POST'])
+@permission_classes([AllowAny])
 def save_analysis_result(request):
     """
     Tahlil natijasini bazaga saqlash
@@ -1293,8 +1295,8 @@ def download_excel(request):
 
 
 @api_view(['POST'])
-def download_csv(request):
 @permission_classes([AllowAny])
+def download_csv(request):
     """
     Tahlil natijasini CSV formatida yuklab olish
     
