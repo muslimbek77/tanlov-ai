@@ -17,8 +17,9 @@ import {
   CheckCircle,
   Eye
 } from 'lucide-react'
+import { API_ENDPOINTS } from '../config/api'
 
-const API_BASE = 'http://localhost:8000/api/anti-fraud'
+const API_BASE = API_ENDPOINTS.antiFraud
 
 interface Participant {
   name: string

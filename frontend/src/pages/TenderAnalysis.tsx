@@ -22,8 +22,9 @@ import {
   History,
   Download
 } from 'lucide-react'
+import { API_ENDPOINTS } from '../config/api'
 
-const API_BASE = 'http://localhost:8000/api/evaluations'
+const API_BASE = API_ENDPOINTS.evaluations
 
 interface Requirement {
   id: string

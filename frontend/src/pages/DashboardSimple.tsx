@@ -4,8 +4,9 @@ import { Button } from '../components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { useTheme } from '../context/ThemeContext'
 import { TrendingUp, Users, FileText, AlertTriangle, Shield, CheckCircle, Loader2 } from 'lucide-react'
+import { API_BASE_URL } from '../config/api'
 
-const API_BASE = 'http://localhost:8000/api'
+const API_BASE = API_BASE_URL
 
 interface Stats {
   total_tenders: number

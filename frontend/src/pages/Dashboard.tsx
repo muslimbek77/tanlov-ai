@@ -18,8 +18,9 @@ import {
   BarChart3,
   ArrowRight
 } from 'lucide-react'
+import { API_BASE_URL } from '../config/api'
 
-const API_BASE = 'http://localhost:8000/api'
+const API_BASE = API_BASE_URL
 
 interface DashboardStats {
   totalTenders: number
