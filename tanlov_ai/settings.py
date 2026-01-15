@@ -206,7 +206,9 @@ if not DEBUG:
     CSRF_COOKIE_SECURE = True
     CSRF_COOKIE_HTTPONLY = False  # JavaScript'dan kirish uchun zarur
     SESSION_COOKIE_SECURE = True
-    SECURE_SSL_REDIRECT = True
+    # SECURE_SSL_REDIRECT va X-Forwarded-Proto dependency bo'lsa, Nginx'da hal qiling
+    # SECURE_SSL_REDIRECT = True  # Nginx'dagi redirect loop sabab bo'lsa, comment qiling
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
     SECURE_HSTS_SECONDS = 31536000
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True

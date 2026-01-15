@@ -170,6 +170,7 @@ cd /var/www/tanlov/backend && source venv/bin/activate && python manage.py dbshe
 |--------|--------|--------|
 | Status 000 | Backend ishlamayapti | `sudo systemctl start tanlov` |
 | 502 Bad Gateway | Gunicorn socket xatoligi | `sudo systemctl restart tanlov` |
+| ERR_TOO_MANY_REDIRECTS | SSL redirect loop | Nginx'da `X-Forwarded-Proto` set qilish |
 | CSRF failed | Origins matchlanmadi | CSRF_TRUSTED_ORIGINS tekshirish |
 | 403 Forbidden | Authentication xatoligi | User mavjudligi tekshirish |
 | 500 Internal Server | Django error | Logs'ni ko'rish: `journalctl -u tanlov` |
@@ -213,3 +214,52 @@ curl -X POST https://tanlov.kuprikqurilish.uz/api/auth/login/ \
   -H "X-CSRFToken: $(csrf_token)" \
   -d '{"username": "trest", "password": "trest2026"}'
 ```
+
+### ERR_TOO_MANY_REDIRECTS - Tuzatish
+
+**Sabab**: SECURE_SSL_REDIRECT + Nginx HTTPS redirect cheksiz loop yaratadi
+
+**Yechim 1 - Django'da (Recommended):**
+```python
+# tanlov_ai/settings.py
+if not DEBUG:
+    # SECURE_SSL_REDIRECT = True  # COMMENT QA'LING - Nginx buni hal qiladi!
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+```
+
+**Yechim 2 - Nginx'da:**
+
+```nginx
+# /etc/nginx/sites-available/tanlov
+
+location /api/ {
+    proxy_pass http://127.0.0.1:8000;
+    
+    # MUHIM: Proxy headers Django'ya HTTPS deb biltirbilsin
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;  # $scheme = https yoki http
+    proxy_set_header X-Forwarded-Host $server_name;
+    
+    # Redirect'dan oshirish
+    proxy_redirect off;
+}
+```
+
+**Server'da qilish kerak:**
+```bash
+cd /var/www/tanlov/backend
+git pull
+python manage.py collectstatic --noinput
+sudo systemctl restart tanlov
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+**Test:**
+```bash
+curl -v https://tanlov.kuprikqurilish.uz/api/stats/
+```
+
+Natija: `301` yoki `302` bo'lmasa, cheksiz redirect yo'q!
