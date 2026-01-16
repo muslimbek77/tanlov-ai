@@ -3,7 +3,6 @@ Tender Tahlil API
 
 Tender shartnomasi va ishtirokchilarni tahlil qilish uchun API endpointlar.
 """
-
 from rest_framework import viewsets, status
 from rest_framework.decorators import api_view, action, permission_classes
 from rest_framework.response import Response
@@ -615,10 +614,6 @@ def draw_header_footer(canvas, doc, language='uz'):
     
     canvas.restoreState()
 
-
-@api_view(['POST'])
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
