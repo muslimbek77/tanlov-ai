@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 
 type Theme = 'light' | 'dark'
-type Language = 'uz' | 'ru'
+type Language = 'uz_latn' | 'uz_cyrl' | 'ru' | 'uz'
 
 interface ThemeContextType {
   theme: Theme
@@ -13,7 +13,7 @@ interface ThemeContextType {
 
 // Tarjimalar
 const translations: Record<Language, Record<string, string>> = {
-  uz: {
+  uz_latn: {
     // Menu
     'menu.dashboard': 'Dashboard',
     'menu.analysis': 'Tender Tahlili',
@@ -53,15 +53,17 @@ const translations: Record<Language, Record<string, string>> = {
     
     // Analysis
     'analysis.title': 'Tender Tahlili',
-    'analysis.subtitle': 'Tender shartnomasini va ishtirokchilarni AI yordamida tahlil qiling',
-    'analysis.upload_tender': 'Tender Shartnomasini Yuklang',
-    'analysis.upload_tender_desc': 'PDF, DOCX yoki TXT formatidagi tender shartnomasini yuklang',
-    'analysis.upload_click': 'Fayl yuklash uchun bosing',
-    'analysis.upload_drag': 'yoki faylni bu yerga tashlang',
-    'analysis.analyze_tender': 'Tender Tahlil Qilish',
+    'analysis.subtitle': 'AI yordamida tender hujjatlarini va ishtirokchilarni tahlil qiling',
+    'analysis.tender_title': 'Tender Hujjati',
+    'analysis.tender_desc': 'AI yordamida tahlil qilish uchun tender hujjatini yuklang',
+    'analysis.upload_tender': 'Tender Hujjatini Yuklang',
+    'analysis.upload_tender_desc': 'Tender hujjatini PDF, DOCX yoki TXT formatda yuklang',
+    'analysis.upload_click': 'Faylni yuklash uchun bosing',
+    'analysis.upload_drag': 'yoki faylni shu yerga torting',
+    'analysis.analyze_tender': 'Tenderni Tahlil Qilish',
     'analysis.analyzing': 'Tahlil qilinmoqda...',
-    'analysis.tender_info': 'Tender Ma\'lumotlari',
-    'analysis.purpose': 'Maqsadi',
+    'analysis.tender_info': 'Tender Haqida Ma\'lumot',
+    'analysis.purpose': 'Maqsad',
     'analysis.type': 'Turi',
     'analysis.requirements_count': 'Talablar soni',
     'analysis.mandatory': 'majburiy',
@@ -69,70 +71,35 @@ const translations: Record<Language, Record<string, string>> = {
     'analysis.weight': 'Vazn',
     'analysis.participants': 'Ishtirokchilar',
     'analysis.add': 'Qo\'shish',
-    'analysis.participants_desc': 'Har bir ishtirokchining hujjatlarini yuklang',
-    'analysis.analyzed_participants': 'Tahlil qilingan ishtirokchilar',
-    'analysis.add_more_desc': 'Qo\'shimcha ishtirokchi qo\'shib qayta tahlil qilishingiz mumkin',
+    'analysis.participants_desc': 'Har bir ishtirokchi hujjatlarini yuklang',
+    'analysis.analyzed_participants': 'Tahlil Qilingan Ishtirokchilar',
+    'analysis.add_more_desc': 'Qo\'shimcha ishtirokchilar qo\'shishingiz mumkin',
     'analysis.add_participant_hint': 'Ishtirokchi qo\'shish uchun "Qo\'shish" tugmasini bosing',
-    'analysis.add_participant': 'Ishtirokchi qo\'shish',
-    'analysis.company_name': 'Kompaniya nomi',
+    'analysis.add_participant': 'Ishtirokchi Qo\'shish',
+    'analysis.company_name': 'Kompaniya Nomi',
     'analysis.evaluate_participants': 'Ishtirokchilarni Baholash',
     'analysis.at_least_one': 'Kamida bitta ishtirokchi qo\'shing',
-    'analysis.completed': 'Tahlil yakunlandi',
+    'analysis.completed': 'Tahlil Yakunlandi',
     'analysis.auto_saved': 'Natijalar avtomatik saqlandi',
     'analysis.history': 'Tarix',
-    'analysis.add_new_participant': 'Yangi ishtirokchi qo\'shish',
-    'analysis.new_analysis': 'Yangi tahlil',
-    'analysis.restart': 'Qayta boshlash',
-    'analysis.winner': 'G\'olib',
-    'analysis.total_score': 'Umumiy ball',
-    'analysis.match': 'Moslik',
-    'analysis.risk_level': 'Xavf darajasi',
-    'analysis.ranking': 'Ishtirokchilar Reytingi',
-    'analysis.strengths': 'Ustunliklari',
-    'analysis.weaknesses': 'Kamchiliklari',
-    'analysis.price': 'Narx',
-    'analysis.summary': 'Xulosa',
     'analysis.history_title': 'Tahlil Tarixi',
     'analysis.history_winner': 'G\'olib',
     'analysis.history_participant': 'ishtirokchi',
     'analysis.history_view': 'Ko\'rish',
-    'analysis.step_tender': 'Tender',
-    'analysis.step_participants': 'Ishtirokchilar',
-    'analysis.step_results': 'Natijalar',
+    // Steps
+    'analysis.steps.tender': 'Tender',
+    'analysis.steps.participants': 'Ishtirokchilar',
+    'analysis.steps.results': 'Natijalar',
     'analysis.error_upload': 'Tender faylini yuklang',
     'analysis.error_analysis': 'Tahlilda xatolik',
-    'analysis.error_server': 'Server bilan aloqa xatosi',
-    
-    // Risk levels
-    'risk.low': 'Past xavf',
-    'risk.medium': 'O\'rta xavf',
-    'risk.high': 'Yuqori xavf',
-    'risk.critical': 'Kritik xavf',
+    'analysis.error_server': 'Server bilan aloqa xatoligi',
     
     // History
     'history.title': 'Tahlil Tarixi',
     'history.subtitle': 'Barcha tahlil qilingan tenderlar va natijalar',
     'history.empty': 'Tahlil tarixi bo\'sh',
-    'history.empty_desc': 'Tender tahlil qilganingizda natijalar bu yerda saqlanadi',
-    'history.start_first': 'Birinchi tahlilni boshlash',
-    'history.total': 'Jami',
-    'history.analyses': 'ta tahlil',
-    'history.select': 'Tahlilni tanlang',
-    'history.select_desc': 'Chap tarafdagi ro\'yxatdan tahlilni tanlang',
-    'history.reanalyze': 'Qayta tahlil',
-    'history.delete_all': 'Barchasini o\'chirish',
-    'history.details': 'Batafsil',
-    'history.hide': 'Yashirish',
-    'history.price': 'Narx',
-    
-    // Anti-Fraud
-    'antifraud.title': 'Anti-Fraud Tizimi',
-    'antifraud.subtitle': 'Korrupsiya va firibgarlik belgilarini AI yordamida aniqlash',
-    'antifraud.price_anomaly': 'Narx Anomaliyalari',
-    'antifraud.price_anomaly_desc': 'G\'ayrioddiy past/yuqori narxlar, kelishilgan narxlar, dumping',
-    'antifraud.doc_similarity': 'Hujjat O\'xshashligi',
-    'antifraud.doc_similarity_desc': 'Bir xil shablonlar, metadata, formatlash xatoliklari',
-    'antifraud.collusion': 'Kelishilgan Takliflar',
+    'history.empty_desc': 'Tahlil natijalari bu yerda saqlanadi',
+    'history.start_first': 'Birinchi tahlilni boshlang',
     'antifraud.collusion_desc': 'Bog\'liq kompaniyalar, oldindan kelishilgan g\'olib',
     'antifraud.tender_info': 'Tender Ma\'lumotlari (ixtiyoriy)',
     'antifraud.tender_name': 'Tender nomi',
@@ -266,6 +233,8 @@ const translations: Record<Language, Record<string, string>> = {
     // Analysis
     'analysis.title': 'Анализ Тендера',
     'analysis.subtitle': 'Анализируйте тендерные документы и участников с помощью ИИ',
+    'analysis.tender_title': 'Тендерный Документ',
+    'analysis.tender_desc': 'Загрузите тендерный документ для анализа с помощью ИИ',
     'analysis.upload_tender': 'Загрузите Тендерный Документ',
     'analysis.upload_tender_desc': 'Загрузите тендерный документ в формате PDF, DOCX или TXT',
     'analysis.upload_click': 'Нажмите для загрузки файла',
@@ -303,14 +272,14 @@ const translations: Record<Language, Record<string, string>> = {
     'analysis.strengths': 'Преимущества',
     'analysis.weaknesses': 'Недостатки',
     'analysis.price': 'Цена',
-    'analysis.summary': 'Заключение',
     'analysis.history_title': 'История Анализов',
     'analysis.history_winner': 'Победитель',
-    'analysis.history_participant': 'участников',
+    'analysis.history_participant': 'участник',
     'analysis.history_view': 'Просмотр',
-    'analysis.step_tender': 'Тендер',
-    'analysis.step_participants': 'Участники',
-    'analysis.step_results': 'Результаты',
+    // Steps
+    'analysis.steps.tender': 'Тендер',
+    'analysis.steps.participants': 'Участники',
+    'analysis.steps.results': 'Результаты',
     'analysis.error_upload': 'Загрузите файл тендера',
     'analysis.error_analysis': 'Ошибка анализа',
     'analysis.error_server': 'Ошибка соединения с сервером',
@@ -439,6 +408,72 @@ const translations: Record<Language, Record<string, string>> = {
   }
 }
 
+export const latinToCyrillicUz = (input: string): string => {
+  if (!input) return input
+  const preserveCase = (src: string, lower: string, upper: string) => {
+    if (src === src.toUpperCase()) return upper
+    if (src[0] === src[0].toUpperCase()) return upper[0] + upper.slice(1).toLowerCase()
+    return lower
+  }
+
+  const digraphs: Array<[RegExp, (m: string) => string]> = [
+    [/O['’]/g, (m) => preserveCase(m, "Ў", "Ў")],
+    [/o['’]/g, () => "ў"],
+    [/G['’]/g, (m) => preserveCase(m, "Ғ", "Ғ")],
+    [/g['’]/g, () => "ғ"],
+    [/Sh/g, () => "Ш"],
+    [/sh/g, () => "ш"],
+    [/Ch/g, () => "Ч"],
+    [/ch/g, () => "ч"],
+    [/Ng/g, () => "Нг"],
+    [/ng/g, () => "нг"],
+    [/Ya/g, () => "Я"],
+    [/ya/g, () => "я"],
+    [/Yu/g, () => "Ю"],
+    [/yu/g, () => "ю"],
+    [/Yo/g, () => "Ё"],
+    [/yo/g, () => "ё"],
+  ]
+
+  let out = input
+  for (const [re, fn] of digraphs) out = out.replace(re, (m) => fn(m))
+
+  const map: Record<string, string> = {
+    A: 'А', a: 'а',
+    B: 'Б', b: 'б',
+    D: 'Д', d: 'д',
+    E: 'Э', e: 'э',
+    F: 'Ф', f: 'ф',
+    G: 'Г', g: 'г',
+    H: 'Ҳ', h: 'ҳ',
+    I: 'И', i: 'и',
+    J: 'Ж', j: 'ж',
+    K: 'К', k: 'к',
+    L: 'Л', l: 'л',
+    M: 'М', m: 'м',
+    N: 'Н', n: 'н',
+    O: 'О', o: 'о',
+    P: 'П', p: 'п',
+    Q: 'Қ', q: 'қ',
+    R: 'Р', r: 'р',
+    S: 'С', s: 'с',
+    T: 'Т', t: 'т',
+    U: 'У', u: 'у',
+    V: 'В', v: 'в',
+    X: 'Х', x: 'х',
+    Y: 'Й', y: 'й',
+    Z: 'З', z: 'з',
+  }
+
+  out = out
+    .split('')
+    .map((ch) => map[ch] ?? ch)
+    .join('')
+
+  out = out.replace(/[’']/g, '')
+  return out
+}
+
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined)
 
 export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
@@ -449,7 +484,10 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   
   const [language, setLanguageState] = useState<Language>(() => {
     const saved = localStorage.getItem('language')
-    return (saved as Language) || 'uz'
+    if (saved === 'uz') return 'uz_latn'
+    if (saved === 'ru') return 'ru'
+    if (saved === 'uz_latn' || saved === 'uz_cyrl') return saved
+    return 'uz_latn'
   })
 
   useEffect(() => {
@@ -474,6 +512,10 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   }
 
   const t = (key: string): string => {
+    if (language === 'uz_cyrl') {
+      const base = translations.uz_latn[key] || key
+      return latinToCyrillicUz(base)
+    }
     return translations[language][key] || key
   }
 

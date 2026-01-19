@@ -16,6 +16,21 @@ from .llm_engine import llm_engine
 logger = logging.getLogger(__name__)
 
 
+def _normalize_language(raw_language: Optional[str]) -> str:
+    lang = (raw_language or 'uz_latn').strip().lower()
+    if lang in ['uz', 'uz-latn', 'uz_uz']:
+        return 'uz_latn'
+    if lang in ['uz-cyrl', 'uz_cyrl', 'uz-cyrl-uz']:
+        return 'uz_cyrl'
+    if lang in ['ru', 'ru-ru', 'rus']:
+        return 'ru'
+    return lang
+
+
+def _is_uzbek(lang: str) -> bool:
+    return _normalize_language(lang).startswith('uz')
+
+
 @dataclass
 class TenderRequirement:
     """Tender talabi"""
@@ -114,9 +129,21 @@ class TenderAnalyzer:
         """
         try:
             logger.info("Tender shartnomasini tahlil qilish boshlandi")
+
+            lang = _normalize_language((tender_metadata or {}).get('language'))
+            if lang == 'ru':
+                lang_instruction = 'Ответь на русском языке. '
+                system_prompt = 'Ты эксперт по государственным закупкам. Анализируй тендерные документы глубоко и всесторонне. Возвращай только JSON.'
+            elif lang == 'uz_cyrl':
+                lang_instruction = 'Жавобни ўзбек тилида (кирилл) бер. '
+                system_prompt = "Сен Ўзбекистон давлат харидлари бўйича юқори малакали экспертсан. Тендер ҳужжатларини ҳар тарафлама чуқур таҳлил қиласан. Фақат JSON форматда жавоб бер."
+            else:
+                lang_instruction = "Javobni o'zbek tilida (lotin) ber. "
+                system_prompt = "Sen O'zbekiston davlat xaridlari bo'yicha yuqori malakali ekspertsan. Tender hujjatlarini har taraflama chuqur tahlil qilasan. Faqat JSON formatida javob ber."
             
             # LLM orqali tender tahlili
             analysis_prompt = f"""
+{lang_instruction}
 Sen tender tahlili bo'yicha yuqori malakali ekspertsan. 
 Quyidagi tender shartnomasini HAR TARAFLAMA CHUQUR tahlil qil.
 
@@ -220,7 +247,7 @@ JSON FORMAT (faqat JSON qaytar, boshqa matn yo'q):
             
             llm_result = llm_engine.generate_response(
                 analysis_prompt,
-                system_prompt="Sen O'zbekiston davlat xaridlari bo'yicha yuqori malakali ekspertsan. Tender hujjatlarini har taraflama chuqur tahlil qilasan. Faqat JSON formatida javob ber.",
+                system_prompt=system_prompt,
                 temperature=0.2
             )
             
@@ -329,6 +356,17 @@ JSON:
         """
         try:
             logger.info(f"Ishtirokchi tahlili boshlandi: {participant_name}")
+
+            lang = _normalize_language((participant_metadata or {}).get('language'))
+            if lang == 'ru':
+                lang_instruction = 'Ответь на русском языке. '
+                system_prompt = 'Ты эксперт по государственным закупкам. Оценивай участников справедливо и детально. Возвращай только JSON.'
+            elif lang == 'uz_cyrl':
+                lang_instruction = 'Жавобни ўзбек тилида (кирилл) бер. '
+                system_prompt = "Сен Ўзбекистон давлат харидлари бўйича экспертсан. Иштирокчиларни адолатли баҳолайсан. Фақат JSON форматда жавоб бер."
+            else:
+                lang_instruction = "Javobni o'zbek tilida (lotin) ber. "
+                system_prompt = "Sen O'zbekiston davlat xaridlari bo'yicha ekspertsan. Ishtirokchilarni adolatli baholaysan. Faqat JSON formatida javob ber."
             
             if not self.tender_requirements:
                 return {
@@ -345,6 +383,7 @@ JSON:
             # LLM orqali tahlil
             default_purpose = "Nomalum"
             analysis_prompt = f"""
+{lang_instruction}
 Sen tender ishtirokchilarini HAR TARAFLAMA baholash bo'yicha ekspertsan. 
 DIQQAT: Barcha jihatlarni CHUQUR tahlil qil, hech narsa e'tibordan chetda qolmasin!
 
@@ -481,7 +520,7 @@ JSON FORMAT (faqat JSON qaytar):
             
             llm_result = llm_engine.generate_response(
                 analysis_prompt,
-                system_prompt="Sen O'zbekiston davlat xaridlari bo'yicha ekspertsan. Ishtirokchilarni adolatli baholaysan. Faqat JSON formatida javob ber.",
+                system_prompt=system_prompt,
                 temperature=0.3
             )
             
@@ -578,12 +617,13 @@ ODDIY JSON qaytar:
                 'error': str(e)
             }
     
-    def compare_participants(self, participants: List[Dict[str, Any]], language: str = 'uz') -> Dict[str, Any]:
+    def compare_participants(self, participants: List[Dict[str, Any]], language: str = 'uz_latn') -> Dict[str, Any]:
         # Kamida 2 ta ishtirokchi bo'lishi shart
+        language = _normalize_language(language)
         if len(participants) < 2:
             error_msg = (
                 "Reyting yaratish uchun kamida 2 ta ishtirokchi kerak. Hozircha {} ta tahlil qilingan. Yana ishtirokchi qo'shing.".format(len(participants))
-                if language == 'uz' else
+                if _is_uzbek(language) else
                 "Для создания рейтинга нужно минимум 2 участника. Сейчас только {}. Добавьте еще участника.".format(len(participants))
             )
             return {
@@ -677,6 +717,45 @@ ODDIY JSON qaytar:
    - Почему
 """
                 system_prompt = "Ты высококвалифицированный эксперт и арбитр по государственным закупкам. Пиши всестороннее, справедливое и подробное заключение на русском языке."
+            elif language == 'uz_cyrl':
+                summary_prompt = f"""
+Сен тендер эксперти ва ҳаккамсан. Қуйидаги иштирокчиларни ҲАР ТАРАФЛАМА солиштир ва БАТАФСИЛ хулоса ёз.
+
+ИШТИРОКЧИЛАР ТАҲЛИЛИ:
+{json.dumps(comparison_table, ensure_ascii=False, indent=2)}
+
+БАТАФСИЛ ХУЛОСА ЁЗ:
+
+1. УМУМИЙ РЕЙТИНГ АСОСЛАРИ:
+   - Нима учун айнан шу тартибда жойлаштирилди
+   - Ҳар бир иштирокчининг асосий фарқлари
+
+2. ҒОЛИБ ТАҲЛИЛИ:
+   - Нима учун биринчи ўринда
+   - Унинг асосий устунликлари
+   - Потенциал рисклари
+
+3. БОШҚА ИШТИРОКЧИЛАР:
+   - Ҳар бирининг кучли томонлари
+   - Ҳар бирининг заиф томонлари
+   - Яхшилаш имкониятлари
+
+4. ТАҚҚОСЛАШ:
+   - Таҗриба бўйича солиштириш
+   - Нарҳ бўйича солиштириш
+   - Сифат бўйича солиштириш
+   - Локация бўйича солиштириш
+
+5. ЯКУНИЙ ТАВСИЯ:
+   - Ким танланиши керак
+   - Қандай шартлар билан
+   - Қандай огоҳлантиришлар билан
+
+6. АЛТЕРНАТИВ ВАРИАНТ:
+   - Агар ғолиб рад этса, ким кейинги
+   - Нима учун
+"""
+                system_prompt = "Сен Ўзбекистон давлат харидлари бўйича юқори малакали эксперт ва ҳакамсан. Ҳар тарафлама, адолатли ва батафсил хулоса ёз (ўзбек кирилл)."
             else:
                 summary_prompt = f"""
 Sen tender eksperti va hakamsan. Quyidagi ishtirokchilarni HAR TARAFLAMA solishtir va BATAFSIL xulosa yoz.
@@ -723,7 +802,12 @@ BATAFSIL XULOSA YOZ:
                 temperature=0.3
             )
             
-            no_summary = 'Xulosa tayyorlanmadi' if language == 'uz' else 'Заключение не подготовлено'
+            if language == 'ru':
+                no_summary = 'Заключение не подготовлено'
+            elif language == 'uz_cyrl':
+                no_summary = 'Хулоса тайёрланмади'
+            else:
+                no_summary = 'Xulosa tayyorlanmadi'
             summary = summary_result.get('response', '') if summary_result.get('success') else no_summary
             
             return {

@@ -122,15 +122,26 @@ const Settings: React.FC = () => {
               <label className="block text-sm font-medium text-foreground mb-3">{t('settings.language')}</label>
               <div className="flex gap-2">
                 <button
-                  onClick={() => setLanguage('uz')}
+                  onClick={() => setLanguage('uz_latn')}
                   className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-lg border transition-all ${
-                    language === 'uz' 
+                    language === 'uz_latn' 
                       ? 'bg-primary text-primary-foreground border-primary shadow-md' 
                       : 'bg-card text-foreground border-border hover:bg-muted'
                   }`}
                 >
                   <Languages className="w-5 h-5" />
-                  O'zbek
+                  O'zbek (Lotin)
+                </button>
+                <button
+                  onClick={() => setLanguage('uz_cyrl')}
+                  className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-lg border transition-all ${
+                    language === 'uz_cyrl' 
+                      ? 'bg-primary text-primary-foreground border-primary shadow-md' 
+                      : 'bg-card text-foreground border-border hover:bg-muted'
+                  }`}
+                >
+                  <Languages className="w-5 h-5" />
+                  Ўзбек (Кирилл)
                 </button>
                 <button
                   onClick={() => setLanguage('ru')}
