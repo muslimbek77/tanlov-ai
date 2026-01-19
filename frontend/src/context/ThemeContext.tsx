@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 
 type Theme = 'light' | 'dark'
-type Language = 'uz_latn' | 'uz_cyrl' | 'ru' | 'uz'
+type Language = 'uz_latn' | 'uz_cyrl' | 'ru'
 
 interface ThemeContextType {
   theme: Theme
@@ -12,7 +12,7 @@ interface ThemeContextType {
 }
 
 // Tarjimalar
-const translations: Record<Language, Record<string, string>> = {
+const translations: Record<'uz_latn' | 'ru', Record<string, string>> = {
   uz_latn: {
     // Menu
     'menu.dashboard': 'Dashboard',
@@ -516,7 +516,7 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       const base = translations.uz_latn[key] || key
       return latinToCyrillicUz(base)
     }
-    return translations[language][key] || key
+    return translations[language]?.[key] || key
   }
 
   return (
