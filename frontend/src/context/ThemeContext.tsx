@@ -82,6 +82,7 @@ const translations: Record<'uz_latn' | 'ru', Record<string, string>> = {
     'analysis.completed': 'Tahlil Yakunlandi',
     'analysis.auto_saved': 'Natijalar avtomatik saqlandi',
     'analysis.history': 'Tarix',
+    'analysis.new_analysis': 'Yangi tahlil',
     'analysis.history_title': 'Tahlil Tarixi',
     'analysis.history_winner': 'G\'olib',
     'analysis.history_participant': 'ishtirokchi',
