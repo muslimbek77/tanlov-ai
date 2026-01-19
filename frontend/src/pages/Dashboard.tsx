@@ -16,9 +16,11 @@ import {
   Shield,
   RefreshCw,
   BarChart3,
-  ArrowRight
+  ArrowRight,
+  Sparkles
 } from 'lucide-react'
 import { API_BASE_URL } from '../config/api'
+import { fadeIn, slideIn, staggerContainer, cardHover, animationClasses } from '../lib/animations'
 
 const API_BASE = API_BASE_URL
 
@@ -142,142 +144,123 @@ const Dashboard: React.FC = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <div className="relative">
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary/20 border-t-primary"></div>
+          <Sparkles className="absolute inset-0 m-auto h-6 w-6 text-primary animate-pulse" />
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 relative z-10">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">{t('dashboard.title')}</h1>
-          <p className="text-muted-foreground">
+        <div className="animate-fade-in">
+          <h1 className="text-5xl font-bold tracking-tight text-foreground flex items-center gap-4">
+            {t('dashboard.title')}
+            <div className="relative">
+              <Sparkles className="w-10 h-10 text-yellow-500 animate-pulse" />
+              <div className="absolute inset-0 bg-yellow-400/40 rounded-full blur-lg animate-pulse"></div>
+            </div>
+          </h1>
+          <p className="text-muted-foreground text-xl mt-3">
             {t('dashboard.subtitle')}
           </p>
         </div>
-        <Button onClick={handleRefresh} disabled={refreshing}>
-          <RefreshCw className={`mr-2 h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
-          {language === 'uz' ? 'Yangilash' : 'Обновить'}
+        <Button 
+          onClick={handleRefresh} 
+          disabled={refreshing}
+          className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-xl hover:shadow-2xl transform hover:-translate-y-1 transition-all duration-300 relative overflow-hidden group"
+        >
+          <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
+          <RefreshCw className={`mr-3 h-5 w-5 relative z-10 ${refreshing ? 'animate-spin' : ''}`} />
+          <span className="relative z-10 font-semibold">{t('dashboard.refresh')}</span>
         </Button>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{t('dashboard.total_tenders')}</CardTitle>
-            <FileText className="h-4 w-4 text-muted-foreground" />
+      <div className="grid gap-8 md:grid-cols-2" {...staggerContainer(0.1)}>
+        <Card className={`${animationClasses['glass-effect']} border-0 shadow-xl hover:shadow-2xl transform hover:-translate-y-2 hover:scale-[1.02] transition-all duration-400 animate-slide-up relative overflow-hidden group`} style={{ animationDelay: '0.1s' }}>
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 animate-gradient-shift"></div>
+          <div className="absolute -top-8 -right-8 w-16 h-16 bg-gradient-to-br from-blue-400/20 to-purple-400/20 rounded-full blur-lg animate-float"></div>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 relative z-10">
+            <CardTitle className="text-sm font-semibold">{t('dashboard.total_tenders')}</CardTitle>
+            <div className="relative group">
+              <FileText className="h-5 w-5 text-blue-500 group-hover:text-blue-600 transition-colors duration-300" />
+              <div className="absolute -inset-2 bg-blue-500/20 rounded-full animate-pulse opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            </div>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalTenders}</div>
-            <p className="text-xs text-muted-foreground">
+          <CardContent className="relative z-10">
+            <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">{stats.totalTenders}</div>
+            <p className="text-sm text-muted-foreground flex items-center gap-1">
+              <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
               {stats.activeTenders} {t('dashboard.active')}
             </p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{t('dashboard.participants')}</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+        <Card className={`${animationClasses['glass-effect']} border-0 shadow-xl hover:shadow-2xl transform hover:-translate-y-2 hover:scale-[1.02] transition-all duration-400 animate-slide-up relative overflow-hidden group`} style={{ animationDelay: '0.2s' }}>
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500 animate-gradient-shift"></div>
+          <div className="absolute -top-8 -right-8 w-16 h-16 bg-gradient-to-br from-green-400/20 to-emerald-400/20 rounded-full blur-lg animate-float"></div>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 relative z-10">
+            <CardTitle className="text-sm font-semibold">{t('dashboard.participants')}</CardTitle>
+            <div className="relative group">
+              <Users className="h-5 w-5 text-green-500 group-hover:text-green-600 transition-colors duration-300" />
+              <div className="absolute -inset-2 bg-green-500/20 rounded-full animate-pulse opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            </div>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalParticipants}</div>
-            <p className="text-xs text-muted-foreground">
-              {stats.tenderParticipants} {language === 'uz' ? 'ta ariza' : 'заявок'}
+          <CardContent className="relative z-10">
+            <div className="text-3xl font-bold text-green-600 dark:text-green-400">{stats.totalParticipants}</div>
+            <p className="text-sm text-muted-foreground flex items-center gap-1">
+              <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
+              {stats.tenderParticipants} {t('dashboard.applications')}
             </p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{t('dashboard.evaluated')}</CardTitle>
-            <CheckCircle className="h-4 w-4 text-muted-foreground" />
+        <Card className={`${animationClasses['glass-effect']} border-0 shadow-xl hover:shadow-2xl transform hover:-translate-y-2 hover:scale-[1.02] transition-all duration-400 animate-slide-up relative overflow-hidden group`} style={{ animationDelay: '0.3s' }}>
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 via-green-500 to-teal-500 animate-gradient-shift"></div>
+          <div className="absolute -top-8 -right-8 w-16 h-16 bg-gradient-to-br from-emerald-400/20 to-green-400/20 rounded-full blur-lg animate-float"></div>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 relative z-10">
+            <CardTitle className="text-sm font-semibold">{t('dashboard.evaluations')}</CardTitle>
+            <div className="relative group">
+              <CheckCircle className="h-5 w-5 text-emerald-500 group-hover:text-emerald-600 transition-colors duration-300" />
+              <div className="absolute -inset-2 bg-emerald-500/20 rounded-full animate-pulse opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.totalEvaluations}</div>
             <p className="text-xs text-muted-foreground">
-              {language === 'uz' ? 'AI tahlillari' : 'AI анализы'}
+              {t('dashboard.ai_analyses')}
             </p>
           </CardContent>
         </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{t('dashboard.fraud_risks')}</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-amber-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.fraudDetections}</div>
-            <p className="text-xs text-muted-foreground">
-              {stats.highRiskFrauds} {language === 'uz' ? 'ta yuqori xavf' : 'высокий риск'}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{language === 'uz' ? 'Compliance' : 'Соответствие'}</CardTitle>
-            <Shield className="h-4 w-4 text-emerald-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.complianceChecks}</div>
-            <p className="text-xs text-muted-foreground">
-              {stats.compliancePassed} {language === 'uz' ? "ta o'tdi" : 'прошли'}
-            </p>
-          </CardContent>
-        </Card>
-      </div>
 
       {/* Quick Actions */}
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-1">
         <Card className="border-2 border-primary/20 hover:border-primary/40 transition-colors cursor-pointer" onClick={() => navigate('/analysis')}>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-foreground">
               <BarChart3 className="h-5 w-5 text-primary" />
-              {language === 'uz' ? 'Tender Tahlili' : 'Анализ тендера'}
+              {language === 'uz_latn' ? 'Tender Tahlili' : language === 'uz_cyrl' ? 'Тендер таҳлили' : 'Анализ тендера'}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              {language === 'uz' 
+              {language === 'uz_latn' 
                 ? 'AI yordamida tender shartnomasini tahlil qiling va ishtirokchilarni baholang.'
+                : language === 'uz_cyrl' 
+                ? 'AI ёрдамида тендер шартномасини таҳлил қилиш ва иштирокчиларни баҳоланг.'
                 : 'Анализируйте тендерные условия и оценивайте участников с помощью ИИ.'}
             </p>
             <ul className="text-sm space-y-1 text-muted-foreground">
-              <li>✓ {language === 'uz' ? 'Tender talablarini avtomatik aniqlash' : 'Автоматическое определение требований'}</li>
-              <li>✓ {language === 'uz' ? 'Ishtirokchilarni har taraflama tahlil' : 'Всесторонний анализ участников'}</li>
-              <li>✓ {language === 'uz' ? "G'olibni aniqlash va tavsiyalar" : 'Определение победителя и рекомендации'}</li>
+              <li>✓ {language === 'uz_latn' ? 'Tender talablarini avtomatik aniqlash' : language === 'uz_cyrl' ? 'Тендер талабларини автоматик аниқлаш' : 'Автоматическое определение требований'}</li>
+              <li>✓ {language === 'uz_latn' ? 'Ishtirokchilarni har taraflama tahlil' : language === 'uz_cyrl' ? 'Иштирокчиларни ҳар томонлама таҳлил' : 'Всесторонний анализ участников'}</li>
+              <li>✓ {language === 'uz_latn' ? "G'olibni aniqlash va tavsiyalar" : language === 'uz_cyrl' ? "Ғолибни аниқлаш ва тавсиялар" : 'Определение победителя и рекомендации'}</li>
             </ul>
             <Button className="w-full">
-              {language === 'uz' ? 'Tahlilni Boshlash' : 'Начать анализ'}
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-          </CardContent>
-        </Card>
-
-        <Card className="border-2 border-amber-500/20 hover:border-amber-500/40 transition-colors cursor-pointer" onClick={() => navigate('/anti-fraud')}>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-foreground">
-              <AlertTriangle className="h-5 w-5 text-amber-500" />
-              {language === 'uz' ? 'Anti-Fraud Tizimi' : 'Антифрод система'}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              {language === 'uz' 
-                ? 'Korrupsiya va firibgarlik belgilarini avtomatik aniqlash.'
-                : 'Автоматическое обнаружение признаков коррупции и мошенничества.'}
-            </p>
-            <ul className="text-sm space-y-1 text-muted-foreground">
-              <li>✓ {language === 'uz' ? "Metadata o'xshashligini tahlil" : 'Анализ сходства метаданных'}</li>
-              <li>✓ {language === 'uz' ? 'Narx anomaliyalarini aniqlash' : 'Обнаружение ценовых аномалий'}</li>
-              <li>✓ {language === 'uz' ? 'Kelishilgan takliflarni aniqlash' : 'Обнаружение сговора'}</li>
-            </ul>
-            <Button variant="outline" className="w-full">
-              {language === 'uz' ? 'Anti-Fraud Tahlili' : 'Антифрод анализ'}
+              {language === 'uz_latn' ? 'Tahlilni Boshlash' : language === 'uz_cyrl' ? 'Таҳилни бошлаш' : 'Начать анализ'}
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           </CardContent>
@@ -289,7 +272,7 @@ const Dashboard: React.FC = () => {
         <Card>
           <CardHeader>
             <CardTitle className="text-foreground">
-              {language === 'uz' ? 'So\'nggi Tahlillar' : 'Недавние анализы'}
+              {language === 'uz_latn' ? 'So\'nggi Tahlillar' : language === 'uz_cyrl' ? 'Сўнгги таҳиллар' : 'Недавние анализы'}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -305,16 +288,16 @@ const Dashboard: React.FC = () => {
                         {item.tender}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {language === 'uz' ? "G'olib" : 'Победитель'}: {item.winner} • {item.participantCount} {language === 'uz' ? 'ishtirokchi' : 'участников'}
+                        {language === 'uz_latn' ? "G'olib" : language === 'uz_cyrl' ? "Ғолиб" : 'Победитель'}: {item.winner} • {item.participantCount} {language === 'uz_latn' ? 'ishtirokchi' : language === 'uz_cyrl' ? 'иштирокчи' : 'участников'}
                       </p>
                     </div>
                   </div>
                   <div className="text-right">
                     <Badge variant="default">
-                      {language === 'uz' ? 'Yakunlangan' : 'Завершён'}
+                      {language === 'uz_latn' ? 'Yakunlangan' : language === 'uz_cyrl' ? 'Якунланган' : 'Завершён'}
                     </Badge>
                     <p className="text-xs text-muted-foreground mt-1">
-                      {new Date(item.date).toLocaleDateString(language === 'uz' ? 'uz-UZ' : 'ru-RU')}
+                      {new Date(item.date).toLocaleDateString(language === 'uz_latn' ? 'uz-UZ' : language === 'uz_cyrl' ? 'uz-Cyrl' : 'ru-RU')}
                     </p>
                   </div>
                 </div>
@@ -322,56 +305,6 @@ const Dashboard: React.FC = () => {
             </div>
           </CardContent>
         </Card>
-      )}
-
-      {/* Risk Indicators - show only if there's data */}
-      {(stats.fraudDetections > 0 || stats.complianceChecks > 0) && (
-        <div className="grid gap-4 md:grid-cols-2">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-foreground">
-                <AlertTriangle className="h-5 w-5 text-amber-500" />
-                {t('dashboard.fraud_risks')}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-foreground">{t('dashboard.detected_risks')}</span>
-                <Badge variant="destructive">{stats.fraudDetections}</Badge>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-foreground">{t('risk.high')}</span>
-                <Badge variant="destructive">{stats.highRiskFrauds}</Badge>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-foreground">{t('risk.medium')}</span>
-                <Badge variant="secondary">{Math.max(0, stats.fraudDetections - stats.highRiskFrauds)}</Badge>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-foreground">
-                <Shield className="h-5 w-5 text-emerald-500" />
-                {t('dashboard.compliance_status')}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-foreground">{language === 'uz' ? "Jami tekshiruvlar" : 'Всего проверок'}</span>
-                <Badge variant="secondary">{stats.complianceChecks}</Badge>
-              </div>
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm text-foreground">
-                  <span>{language === 'uz' ? "O'tganlar" : 'Прошли'}</span>
-                  <span>{stats.complianceChecks > 0 ? Math.round((stats.compliancePassed / stats.complianceChecks) * 100) : 0}%</span>
-                </div>
-                <Progress value={stats.complianceChecks > 0 ? (stats.compliancePassed / stats.complianceChecks) * 100 : 0} className="h-2" />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
       )}
     </div>
   )

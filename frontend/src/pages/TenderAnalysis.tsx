@@ -2,6 +2,7 @@ import React, { useState, useCallback, useEffect } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import ReactMarkdown from 'react-markdown'
 import { useTheme } from '../context/ThemeContext'
+import { latinToCyrillicUz } from '../context/ThemeContext'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card'
 import { Button } from '../components/ui/button'
 import { Badge } from '../components/ui/badge'
@@ -20,9 +21,16 @@ import {
   Trash2,
   BarChart3,
   History,
-  Download
+  Download,
+  ArrowRight,
+  Sparkles,
+  Zap,
+  Target,
+  Trophy,
+  Clock
 } from 'lucide-react'
 import { API_ENDPOINTS } from '../config/api'
+import { fadeIn, slideIn, staggerContainer, cardHover, animationClasses } from '../lib/animations'
 
 const API_BASE = API_ENDPOINTS.evaluations
 
@@ -74,6 +82,15 @@ const TenderAnalysis: React.FC = () => {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const { language, t } = useTheme()
+
+  const isRu = language === 'ru'
+  const isUzCyrl = language === 'uz_cyrl'
+  const localize = (uzLatn: string, ruText: string) => {
+    if (isRu) return ruText
+    if (isUzCyrl) return latinToCyrillicUz(uzLatn)
+    return uzLatn
+  }
+  const dateLocale = isRu ? 'ru-RU' : 'uz-UZ'
   
   // Settings
   const getMinParticipants = () => {
@@ -255,7 +272,7 @@ const TenderAnalysis: React.FC = () => {
   // Tender tahlil qilish
   const analyzeTender = async () => {
     if (!tenderFile) {
-      setError(language === 'uz' ? 'Tender faylini yuklang' : 'Загрузите файл тендера')
+      setError(t('analysis.error_upload'))
       return
     }
 
@@ -281,10 +298,10 @@ const TenderAnalysis: React.FC = () => {
         localStorage.setItem('current_analysis_step', 'participants')
         setStep('participants')
       } else {
-        setError(data.error || (language === 'uz' ? 'Tahlilda xatolik' : 'Ошибка анализа'))
+        setError(data.error || t('analysis.error_analysis'))
       }
     } catch (err) {
-      setError(language === 'uz' ? 'Server bilan aloqa xatosi' : 'Ошибка соединения с сервером')
+      setError(t('analysis.error_server'))
       console.error(err)
     } finally {
       setLoading(false)
@@ -340,9 +357,10 @@ const TenderAnalysis: React.FC = () => {
     if (validParticipants.length === 0 && participantAnalyses.length > 0) {
       // Minimal ishtirokchilar sonini tekshirish
       if (participantAnalyses.length < minParticipants) {
-        setError(language === 'uz' 
-          ? `Reyting yaratish uchun kamida ${minParticipants} ta ishtirokchi kerak. Hozircha ${participantAnalyses.length} ta tahlil qilingan. ${minParticipants - participantAnalyses.length} ta boshqasini qo'shing.`
-          : `Для создания рейтинга необходимо минимум ${minParticipants} участника. Сейчас проанализировано ${participantAnalyses.length}. Добавьте еще ${minParticipants - participantAnalyses.length}.`)
+        setError(localize(
+          `Reyting yaratish uchun kamida ${minParticipants} ta ishtirokchi kerak. Hozircha ${participantAnalyses.length} ta tahlil qilingan. ${minParticipants - participantAnalyses.length} ta boshqasini qo'shing.`,
+          `Для создания рейтинга необходимо минимум ${minParticipants} участника. Сейчас проанализировано ${participantAnalyses.length}. Добавьте еще ${minParticipants - participantAnalyses.length}.`
+        ))
         return
       }
       
@@ -364,11 +382,11 @@ const TenderAnalysis: React.FC = () => {
           setStep('results')
           localStorage.setItem('current_analysis_step', 'results')
         } else {
-          setError(compareData.error || (language === 'uz' ? 'Solishtirish xatosi' : 'Ошибка сравнения'))
+          setError(compareData.error || t('analysis.error_analysis'))
         }
       } catch (err) {
         console.error('Compare error:', err)
-        setError(language === 'uz' ? 'Server bilan aloqa xatosi' : 'Ошибка соединения с сервером')
+        setError(t('analysis.error_server'))
       } finally {
         setLoading(false)
       }
@@ -376,9 +394,7 @@ const TenderAnalysis: React.FC = () => {
     }
     
     if (validParticipants.length === 0) {
-      setError(language === 'uz'
-        ? `Hech bo'lmaganda bitta ishtirokchi faylini yuklang.`
-        : `Загрузите хотя бы один файл участника.`)
+      setError(t('analysis.at_least_one'))
       return
     }
 
@@ -436,9 +452,10 @@ const TenderAnalysis: React.FC = () => {
       // Minimal ishtirokchilar sonini tekshirish
       const minParticipants = getMinParticipants()
       if (analyses.length < minParticipants) {
-        setError(language === 'uz' 
-          ? `Reyting yaratish uchun kamida ${minParticipants} ta ishtirokchi kerak. Hozircha ${analyses.length} ta tahlil qilingan. ${minParticipants - analyses.length} ta boshqasini qo'shing.`
-          : `Для создания рейтинга необходимо минимум ${minParticipants} участника. Сейчас проанализировано ${analyses.length}. Добавьте еще ${minParticipants - analyses.length}.`)
+        setError(localize(
+          `Reyting yaratish uchun kamida ${minParticipants} ta ishtirokchi kerak. Hozircha ${analyses.length} ta tahlil qilingan. ${minParticipants - analyses.length} ta boshqasini qo'shing.`,
+          `Для создания рейтинга необходимо минимум ${minParticipants} участника. Сейчас проанализировано ${analyses.length}. Добавьте еще ${minParticipants - analyses.length}.`
+        ))
         setLoading(false)
         return
       }
@@ -488,8 +505,8 @@ const TenderAnalysis: React.FC = () => {
             const result = {
               id: serverId || Date.now(),
               date: new Date().toISOString(),
-              tender: tenderAnalysis?.tender_purpose || (language === 'uz' ? 'Noma\'lum tender' : 'Неизвестный тендер'),
-              winner: compareData.winner?.participant_name || (language === 'uz' ? 'Noma\'lum' : 'Неизвестно'),
+              tender: tenderAnalysis?.tender_purpose || localize("Noma'lum tender", 'Неизвестный тендер'),
+              winner: compareData.winner?.participant_name || localize("Noma'lum", 'Неизвестно'),
               ranking: compareData.ranking,
               summary: compareData.summary,
               participantCount: compareData.ranking.length,
@@ -562,11 +579,11 @@ const TenderAnalysis: React.FC = () => {
         window.URL.revokeObjectURL(url)
         document.body.removeChild(a)
       } else {
-        setError(language === 'uz' ? 'PDF yuklab olishda xatolik' : 'Ошибка загрузки PDF')
+        setError(t('analysis.error_analysis'))
       }
     } catch (err) {
       console.error('PDF download error:', err)
-      setError(language === 'uz' ? 'PDF yuklab olishda xatolik' : 'Ошибка загрузки PDF')
+      setError(t('analysis.error_analysis'))
     } finally {
       setPdfLoading(false)
     }
@@ -599,11 +616,11 @@ const TenderAnalysis: React.FC = () => {
         window.URL.revokeObjectURL(url)
         document.body.removeChild(a)
       } else {
-        setError(language === 'uz' ? 'Excel yuklab olishda xatolik' : 'Ошибка загрузки Excel')
+        setError(t('analysis.error_analysis'))
       }
     } catch (err) {
       console.error('Excel download error:', err)
-      setError(language === 'uz' ? 'Excel yuklab olishda xatolik' : 'Ошибка загрузки Excel')
+      setError(t('analysis.error_analysis'))
     }
   }
 
@@ -627,26 +644,49 @@ const TenderAnalysis: React.FC = () => {
   }
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6">
+    <div className="space-y-8 relative z-10">
       {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">{t('analysis.title')}</h1>
-          <p className="text-muted-foreground mt-1">
-            {t('analysis.subtitle')}
-          </p>
-        </div>
-        <div className="flex gap-2">
-          {savedResults.length > 0 && step === 'tender' && (
-            <Button variant="outline" onClick={() => setShowHistory(!showHistory)}>
-              📋 {t('analysis.history_title')} ({savedResults.length})
+      <div className="relative z-10">
+        <div className="flex justify-between items-center">
+          <div className="animate-slide-up">
+            <h1 className="text-4xl font-bold text-foreground flex items-center gap-3">
+              {t('analysis.title')}
+              <Sparkles className="w-8 h-8 text-yellow-500 animate-pulse" />
+            </h1>
+            <p className="text-muted-foreground text-lg mt-2">
+              {t('analysis.subtitle')}
+            </p>
+          </div>
+          <div className="flex gap-2 animate-fade-in" style={{ animationDelay: '0.3s' }}>
+            {savedResults.length > 0 && step === 'tender' && (
+              <Button 
+                variant="outline" 
+                onClick={() => setShowHistory(!showHistory)}
+                className="bg-gradient-to-r from-primary/10 to-primary/5 hover:from-primary/20 hover:to-primary/10 border-primary/20 hover:scale-105 transition-all duration-200"
+              >
+                <History className="w-4 h-4 mr-2" />
+                {t('analysis.history_title')} ({savedResults.length})
+              </Button>
+            )}
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setStep('tender')
+                setTenderFile(null)
+                setTenderAnalysis(null)
+                setParticipantFiles([{ name: '', file: null }])
+                setParticipantAnalyses([])
+                setRanking([])
+                setWinner(null)
+                setSummary('')
+                setError(null)
+              }}
+              className="bg-gradient-to-r from-destructive/10 to-destructive/5 hover:from-destructive/20 hover:to-destructive/10 border-destructive/20 hover:scale-105 transition-all duration-200"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              {t('analysis.new_analysis')}
             </Button>
-          )}
-          {step !== 'tender' && (
-            <Button variant="outline" onClick={resetAnalysis}>
-              {t('analysis.restart')}
-            </Button>
-          )}
+          </div>
         </div>
       </div>
 
@@ -667,7 +707,7 @@ const TenderAnalysis: React.FC = () => {
                     <p className="font-medium text-foreground">{result.tender}</p>
                     <p className="text-sm text-muted-foreground">
                       {t('analysis.history_winner')}: {result.winner} • {result.participantCount} {t('analysis.history_participant')} • 
-                      {new Date(result.date).toLocaleDateString(language === 'uz' ? 'uz-UZ' : 'ru-RU')}
+                      {new Date(result.date).toLocaleDateString(dateLocale)}
                     </p>
                   </div>
                   <div className="flex gap-2">
@@ -686,23 +726,40 @@ const TenderAnalysis: React.FC = () => {
       )}
 
       {/* Progress Steps */}
-      <div className="flex items-center justify-center space-x-4">
-        {['tender', 'participants', 'results'].map((s, i) => (
-          <React.Fragment key={s}>
-            <div className={`flex items-center space-x-2 ${step === s ? 'text-primary' : 'text-muted-foreground'}`}>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                step === s ? 'bg-primary text-primary-foreground' : 
-                ['tender', 'participants', 'results'].indexOf(step) > i ? 'bg-primary text-primary-foreground' : 'bg-muted'
-              }`}>
-                {['tender', 'participants', 'results'].indexOf(step) > i ? <CheckCircle className="w-5 h-5" /> : i + 1}
+      <div className="flex items-center justify-center mb-8">
+        <div className="flex items-center space-x-6">
+          {[
+            { key: 'tender', icon: FileText, label: t('analysis.steps.tender') },
+            { key: 'participants', icon: Users, label: t('analysis.steps.participants') },
+            { key: 'results', icon: Trophy, label: t('analysis.steps.results') }
+          ].map((stepItem, index) => (
+            <div key={stepItem.key} className="flex items-center">
+              <div className={`relative group`}>
+                <div className={`flex items-center space-x-3 px-6 py-3 rounded-full transition-all duration-500 transform ${
+                  step === stepItem.key 
+                    ? 'bg-gradient-to-r from-primary to-primary/80 text-primary-foreground shadow-xl scale-110 animate-glow-pulse' 
+                    : 'bg-muted/80 text-muted-foreground hover:bg-muted hover:scale-105'
+                }`}>
+                  <stepItem.icon className="w-5 h-5" />
+                  <span className="text-sm font-semibold">{stepItem.label}</span>
+                  {step === stepItem.key && (
+                    <div className="absolute -inset-1 bg-primary/20 rounded-full animate-pulse-ring"></div>
+                  )}
+                </div>
+                {step === stepItem.key && (
+                  <Sparkles className="absolute -top-2 -right-2 w-4 h-4 text-yellow-500 animate-pulse" />
+                )}
               </div>
-              <span className="font-medium">
-                {s === 'tender' ? t('analysis.step_tender') : s === 'participants' ? t('analysis.step_participants') : t('analysis.step_results')}
-              </span>
+              {index < 2 && (
+                <ArrowRight className={`w-5 h-5 mx-3 transition-all duration-500 ${
+                  step === stepItem.key || (stepItem.key === 'tender' && step === 'participants') || (stepItem.key === 'participants' && step === 'results')
+                    ? 'text-primary scale-125' 
+                    : 'text-muted-foreground'
+                }`} />
+              )}
             </div>
-            {i < 2 && <div className="w-16 h-0.5 bg-muted" />}
-          </React.Fragment>
-        ))}
+          ))}
+        </div>
       </div>
 
       {/* Error */}
@@ -715,14 +772,15 @@ const TenderAnalysis: React.FC = () => {
 
       {/* Step 1: Tender Upload */}
       {step === 'tender' && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center text-foreground">
-              <FileText className="w-5 h-5 mr-2" />
-              {t('analysis.upload_tender')}
+        <Card className={`${animationClasses['glass-effect']} border-0 shadow-xl animate-slide-up`}>
+          <CardHeader className="text-center">
+            <CardTitle className="flex items-center justify-center gap-2 text-2xl">
+              <Target className="w-6 h-6 text-primary" />
+              {t('analysis.tender_title')}
+              <Sparkles className="w-5 h-5 text-yellow-500 animate-pulse" />
             </CardTitle>
-            <CardDescription>
-              {t('analysis.upload_tender_desc')}
+            <CardDescription className="text-base">
+              {t('analysis.tender_desc')}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -732,9 +790,9 @@ const TenderAnalysis: React.FC = () => {
                 accept=".pdf,.docx,.doc,.txt"
                 onChange={handleTenderUpload}
                 className="hidden"
-                id="tender-upload"
+                id="tender-file-input"
               />
-              <label htmlFor="tender-upload" className="cursor-pointer">
+              <label htmlFor="tender-file-input" className="cursor-pointer">
                 <Upload className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
                 {tenderFile ? (
                   <div>
@@ -752,19 +810,19 @@ const TenderAnalysis: React.FC = () => {
 
             <Button 
               onClick={analyzeTender} 
-              disabled={!tenderFile || loading}
-              className="w-full"
+              disabled={loading || !tenderFile}
+              className="w-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200"
               size="lg"
             >
               {loading ? (
                 <>
-                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   {t('analysis.analyzing')}
                 </>
               ) : (
                 <>
-                  <BarChart3 className="w-5 h-5 mr-2" />
-                  {t('analysis.analyze_tender')}
+                  <Zap className="mr-2 h-4 w-4" />
+                  {t('analysis.start_analysis')}
                 </>
               )}
             </Button>
@@ -898,7 +956,7 @@ const TenderAnalysis: React.FC = () => {
                     className="w-full"
                   >
                     <Plus className="w-4 h-4 mr-1" />
-                    {language === 'uz' ? 'Yana ishtirokchi qo\'shish' : 'Добавить участника'}
+                    {localize("Yana ishtirokchi qo'shish", 'Добавить участника')}
                   </Button>
                 )}
               </div>
@@ -948,14 +1006,14 @@ const TenderAnalysis: React.FC = () => {
                     ) : (
                       <Download className="w-4 h-4 mr-2" />
                     )}
-                    {language === 'uz' ? 'PDF yuklab olish' : 'Скачать PDF'}
+                    {localize('PDF yuklab olish', 'Скачать PDF')}
                   </Button>
                   <Button 
                     onClick={downloadExcel} 
                     variant="outline"
                   >
                     <Download className="w-4 h-4 mr-2" />
-                    {language === 'uz' ? 'Excel' : 'Excel'}
+                    Excel
                   </Button>
                   <Button 
                     variant="outline" 

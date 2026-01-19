@@ -103,22 +103,6 @@ const DashboardSimple: React.FC = () => {
       icon: TrendingUp,
       color: 'text-purple-600',
       bg: 'bg-purple-100 dark:bg-purple-900/30'
-    },
-    {
-      title: t('dashboard.fraud_risks'),
-      value: stats?.fraud_detections || 0,
-      subtext: `${stats?.high_risk_frauds || 0} ${t('dashboard.high_risk')}`,
-      icon: AlertTriangle,
-      color: 'text-red-600',
-      bg: 'bg-red-100 dark:bg-red-900/30'
-    },
-    {
-      title: t('dashboard.compliance'),
-      value: stats?.compliance_checks || 0,
-      subtext: `${stats?.compliance_passed || 0} ${t('dashboard.passed')}`,
-      icon: Shield,
-      color: 'text-amber-600',
-      bg: 'bg-amber-100 dark:bg-amber-900/30'
     }
   ]
 
@@ -142,7 +126,7 @@ const DashboardSimple: React.FC = () => {
       )}
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {statCards.map((stat, index) => (
           <Card key={index} className="hover:shadow-lg transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -162,7 +146,7 @@ const DashboardSimple: React.FC = () => {
       </div>
 
       {/* Main Actions */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-6">
         {/* Tender Tahlili */}
         <Card className="border-2 border-primary/20">
           <CardHeader>

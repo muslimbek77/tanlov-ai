@@ -27,11 +27,69 @@ from reportlab.lib.units import inch, cm
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.pdfbase.pdfmetrics import registerFontFamily
 
 from core.tender_analyzer import tender_analyzer
 from core.services import document_processor
 
 logger = logging.getLogger(__name__)
+
+
+def _normalize_language(raw_language: str) -> str:
+    lang = (raw_language or 'uz_latn').strip().lower()
+    if lang in ['uz', 'uz-latn', 'uz_uz']:
+        return 'uz_latn'
+    if lang in ['uz-cyrl', 'uz_cyrl', 'uz-cyrl-uz']:
+        return 'uz_cyrl'
+    if lang in ['ru', 'ru-ru', 'rus']:
+        return 'ru'
+    return lang
+
+
+def _is_uzbek(lang: str) -> bool:
+    return _normalize_language(lang).startswith('uz')
+
+
+def _register_pdf_fonts() -> dict:
+    candidates = [
+        (
+            '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
+            '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf',
+            'DejaVuSans',
+        ),
+        (
+            '/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf',
+            '/usr/share/fonts/truetype/dejavu/DejaVuSerif-Bold.ttf',
+            'DejaVuSerif',
+        ),
+    ]
+    try:
+        import reportlab
+        base = os.path.join(os.path.dirname(reportlab.__file__), 'fonts')
+        candidates.append((os.path.join(base, 'Vera.ttf'), os.path.join(base, 'VeraBd.ttf'), 'Vera'))
+    except Exception:
+        pass
+
+    for regular_path, bold_path, family in candidates:
+        if os.path.exists(regular_path) and os.path.exists(bold_path):
+            try:
+                pdfmetrics.registerFont(TTFont(family, regular_path))
+                pdfmetrics.registerFont(TTFont(f'{family}-Bold', bold_path))
+                registerFontFamily(family, normal=family, bold=f'{family}-Bold', italic=family, boldItalic=f'{family}-Bold')
+                return {'family': family, 'regular': family, 'bold': f'{family}-Bold'}
+            except Exception:
+                continue
+
+    return {'family': 'Helvetica', 'regular': 'Helvetica', 'bold': 'Helvetica-Bold'}
+
+
+def _msg(language: str, uz_latn: str, uz_cyrl: str, ru: str) -> str:
+    lang = _normalize_language(language)
+    if lang == 'ru':
+        return ru
+    if lang == 'uz_cyrl':
+        return uz_cyrl
+    return uz_latn
 
 
 def extract_text_from_file(file) -> str:
@@ -101,7 +159,7 @@ def analyze_tender(request):
     try:
         tender_text = ""
         metadata = {}
-        language = request.data.get('language', 'uz')  # Default: O'zbek
+        language = _normalize_language(request.data.get('language', 'uz_latn'))
         
         # Fayldan yoki matndan olish
         if 'file' in request.FILES:
@@ -109,7 +167,12 @@ def analyze_tender(request):
             allowed_ext = ['.pdf', '.docx', '.txt']
             ext = os.path.splitext(file.name)[1].lower()
             if ext not in allowed_ext:
-                error_msg = 'Faqat PDF, DOCX yoki TXT fayl yuklang' if language == 'uz' else 'Загрузите только PDF, DOCX или TXT файл'
+                error_msg = _msg(
+                    language,
+                    'Faqat PDF, DOCX yoki TXT fayl yuklang',
+                    'Фақат PDF, DOCX ёки TXT файл юкланг',
+                    'Загрузите только PDF, DOCX или TXT файл',
+                )
                 return Response({
                     'success': False,
                     'error': error_msg
@@ -120,6 +183,18 @@ def analyze_tender(request):
         # Mazmun va mantiqiy tekshiruv (GPT orqali)
         if tender_text.strip():
             from core.llm_engine import llm_engine
+            if not getattr(llm_engine, 'providers', None):
+                error_msg = _msg(
+                    language,
+                    "LLM provayderi sozlanmagan. .env faylga OPENAI_API_KEY qo'shing yoki Ollama'ni ishga tushiring.",
+                    "LLM провайдери созланмаган. .env файлга OPENAI_API_KEY қўшинг ёки Ollama'ни ишга туширинг.",
+                    "LLM провайдер не настроен. Добавьте OPENAI_API_KEY в .env или запустите Ollama.",
+                )
+                return Response({
+                    'success': False,
+                    'error': error_msg
+                }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
             check_prompt = f"""
 Quyidagi matn tender shartnomasi yoki unga o'xshash rasmiy hujjatmi? Mazmunan va mantiqan to'g'ri, to'liq va tahlil qilishga yaroqlimi? Faqat 'HA' yoki 'YO' deb javob ber:
 
@@ -131,7 +206,12 @@ Quyidagi matn tender shartnomasi yoki unga o'xshash rasmiy hujjatmi? Mazmunan va
             else:
                 check_response = str(check_result).strip().upper()
             if 'YO' in check_response:
-                error_msg = "Yuklangan fayl mazmunan yoki mantiqan noto'g'ri. Iltimos, to'g'ri tender faylini yuklang." if language == 'uz' else "Загруженный файл не соответствует содержанию тендера. Пожалуйста, загрузите правильный файл."
+                error_msg = _msg(
+                    language,
+                    "Yuklangan fayl mazmunan yoki mantiqan noto'g'ri. Iltimos, to'g'ri tender faylini yuklang.",
+                    "Юкланган файл мазмунан ёки мантиқан нотўғри. Илтимос, тўғри тендер файлини юкланг.",
+                    "Загруженный файл не соответствует содержанию тендера. Пожалуйста, загрузите правильный файл.",
+                )
                 return Response({
                     'success': False,
                     'error': error_msg
@@ -139,14 +219,24 @@ Quyidagi matn tender shartnomasi yoki unga o'xshash rasmiy hujjatmi? Mazmunan va
         elif 'text' in request.data:
             tender_text = request.data.get('text', '')
         else:
-            error_msg = 'Tender fayli yoki matni talab qilinadi' if language == 'uz' else 'Требуется файл или текст тендера'
+            error_msg = _msg(
+                language,
+                'Tender fayli yoki matni talab qilinadi',
+                'Тендер файли ёки матни талаб қилинади',
+                'Требуется файл или текст тендера',
+            )
             return Response({
                 'success': False,
                 'error': error_msg
             }, status=status.HTTP_400_BAD_REQUEST)
         
         if not tender_text.strip():
-            error_msg = 'Tender matni bo\'sh' if language == 'uz' else 'Текст тендера пуст'
+            error_msg = _msg(
+                language,
+                "Tender matni bo'sh",
+                "Тендер матни бўш",
+                'Текст тендера пуст',
+            )
             return Response({
                 'success': False,
                 'error': error_msg
@@ -168,8 +258,21 @@ Quyidagi matn tender shartnomasi yoki unga o'xshash rasmiy hujjatmi? Mazmunan va
         
         if result['success']:
             return Response(result, status=status.HTTP_200_OK)
-        else:
-            return Response(result, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        error_text = str(result.get('error', ''))
+        if 'Hech qanday LLM provayderi mavjud emas' in error_text or 'LLM' in error_text:
+            error_msg = _msg(
+                language,
+                "LLM provayderi sozlanmagan yoki mavjud emas. .env faylga OPENAI_API_KEY qo'shing yoki Ollama'ni sozlang.",
+                "LLM провайдери созланмаган ёки мавжуд эмас. .env файлга OPENAI_API_KEY қўшинг ёки Ollama'ни созланг.",
+                "LLM провайдер не настроен или недоступен. Добавьте OPENAI_API_KEY в .env или настройте Ollama.",
+            )
+            return Response({
+                'success': False,
+                'error': error_msg
+            }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
+        return Response(result, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             
     except Exception as e:
         logger.error(f"Tender tahlilida xatolik: {str(e)}")
@@ -200,8 +303,8 @@ def analyze_participant(request):
         - analysis: Ishtirokchi tahlili natijalari
     """
     try:
-        language = request.data.get('language', 'uz')
-        default_name = 'Noma\'lum ishtirokchi' if language == 'uz' else 'Неизвестный участник'
+        language = _normalize_language(request.data.get('language', 'uz_latn'))
+        default_name = _msg(language, "Noma'lum ishtirokchi", "Номаълум иштирокчи", 'Неизвестный участник')
         participant_name = request.data.get('name', default_name)
         participant_text = ""
         metadata = {'language': language}
@@ -233,7 +336,12 @@ def analyze_participant(request):
             allowed_ext = ['.pdf', '.docx', '.txt']
             ext = os.path.splitext(file.name)[1].lower()
             if ext not in allowed_ext:
-                error_msg = 'Faqat PDF, DOCX yoki TXT fayl yuklang' if language == 'uz' else 'Загрузите только PDF, DOCX или TXT файл'
+                error_msg = _msg(
+                    language,
+                    'Faqat PDF, DOCX yoki TXT fayl yuklang',
+                    'Фақат PDF, DOCX ёки TXT файл юкланг',
+                    'Загрузите только PDF, DOCX или TXT файл',
+                )
                 return Response({
                     'success': False,
                     'error': error_msg
@@ -255,7 +363,12 @@ Quyidagi matn ishtirokchi hujjatlari yoki unga o'xshash rasmiy hujjatmi? Mazmuna
             else:
                 check_response = str(check_result).strip().upper()
             if 'YO' in check_response:
-                error_msg = "Yuklangan fayl mazmunan yoki mantiqan noto'g'ri. Iltimos, to'g'ri ishtirokchi faylini yuklang." if language == 'uz' else "Загруженный файл не соответствует содержанию участника. Пожалуйста, загрузите правильный файл."
+                error_msg = _msg(
+                    language,
+                    "Yuklangan fayl mazmunan yoki mantiqan noto'g'ri. Iltimos, to'g'ri ishtirokchi faylini yuklang.",
+                    "Юкланган файл мазмунан ёки мантиқан нотўғри. Илтимос, тўғри иштирокчи файлини юкланг.",
+                    "Загруженный файл не соответствует содержанию участника. Пожалуйста, загрузите правильный файл.",
+                )
                 return Response({
                     'success': False,
                     'error': error_msg
@@ -263,14 +376,24 @@ Quyidagi matn ishtirokchi hujjatlari yoki unga o'xshash rasmiy hujjatmi? Mazmuna
         elif 'text' in request.data:
             participant_text = request.data.get('text', '')
         else:
-            error_msg = 'Ishtirokchi fayli yoki matni talab qilinadi' if language == 'uz' else 'Требуется файл или текст участника'
+            error_msg = _msg(
+                language,
+                'Ishtirokchi fayli yoki matni talab qilinadi',
+                'Иштирокчи файли ёки матни талаб қилинади',
+                'Требуется файл или текст участника',
+            )
             return Response({
                 'success': False,
                 'error': error_msg
             }, status=status.HTTP_400_BAD_REQUEST)
         
         if not participant_text.strip():
-            error_msg = 'Ishtirokchi matni bo\'sh' if language == 'uz' else 'Текст участника пуст'
+            error_msg = _msg(
+                language,
+                "Ishtirokchi matni bo'sh",
+                "Иштирокчи матни бўш",
+                'Текст участника пуст',
+            )
             return Response({
                 'success': False,
                 'error': error_msg
@@ -325,10 +448,15 @@ def compare_participants(request):
     """
     try:
         participants = request.data.get('participants', [])
-        language = request.data.get('language', 'uz')
+        language = _normalize_language(request.data.get('language', 'uz_latn'))
         
         if not participants:
-            error_msg = 'Ishtirokchilar ro\'yxati bo\'sh' if language == 'uz' else 'Список участников пуст'
+            error_msg = _msg(
+                language,
+                "Ishtirokchilar ro'yxati bo'sh",
+                "Иштирокчилар рўйхати бўш",
+                'Список участников пуст',
+            )
             return Response({
                 'success': False,
                 'error': error_msg
@@ -583,11 +711,12 @@ def draw_header_footer(canvas, doc, language='uz'):
     
     # TANLOV AI
     canvas.setFillColor(colors.Color(0.2, 0.45, 0.3))
-    canvas.setFont('Helvetica-Bold', 12)
+    fonts = _register_pdf_fonts()
+    canvas.setFont(fonts['bold'], 12)
     canvas.drawString(margin + 15, header_y, "TANLOV AI")
     
     # Sana
-    canvas.setFont('Helvetica', 9)
+    canvas.setFont(fonts['regular'], 9)
     canvas.setFillColor(colors.Color(0.4, 0.4, 0.4))
     date_str = datetime.now().strftime('%d.%m.%Y')
     canvas.drawRightString(page_width - margin - 15, header_y, date_str)
@@ -605,8 +734,14 @@ def draw_header_footer(canvas, doc, language='uz'):
     
     # Tashkilot nomi
     canvas.setFillColor(colors.Color(0.4, 0.4, 0.4))
-    canvas.setFont('Helvetica', 7)
-    org_name = "Raqamlashtirish va AKTni joriy qilish boshqarmasi" if language == 'uz' else "Управление цифровизации и внедрения ИКТ"
+    canvas.setFont(fonts['regular'], 7)
+    lang = _normalize_language(language)
+    if lang == 'ru':
+        org_name = "Управление цифровизации и внедрения ИКТ"
+    elif lang == 'uz_cyrl':
+        org_name = "Рақамлаштириш ва АКТни жорий қилиш бошқармаси"
+    else:
+        org_name = "Raqamlashtirish va AKTni joriy qilish boshqarmasi"
     canvas.drawString(margin + 15, footer_y, org_name)
     
     # Sahifa raqami
@@ -623,11 +758,13 @@ def export_pdf(request):
     """
     try:
         data = request.data
-        language = data.get('language', 'uz')
+        language = _normalize_language(data.get('language', 'uz_latn'))
         tender_analysis = data.get('tender_analysis', {})
         ranking = data.get('ranking', [])
         winner = data.get('winner', {})
         summary = data.get('summary', '')
+
+        fonts = _register_pdf_fonts()
         
         # PDF yaratish
         buffer = io.BytesIO()
@@ -660,7 +797,7 @@ def export_pdf(request):
             spaceBefore=0,
             alignment=1,
             textColor=PRIMARY,
-            fontName='Helvetica-Bold',
+            fontName=fonts['bold'],
         )
         
         heading_style = ParagraphStyle(
@@ -669,7 +806,7 @@ def export_pdf(request):
             spaceAfter=6,
             spaceBefore=10,
             textColor=PRIMARY,
-            fontName='Helvetica-Bold',
+            fontName=fonts['bold'],
         )
         
         normal_style = ParagraphStyle(
@@ -678,7 +815,7 @@ def export_pdf(request):
             spaceAfter=3,
             leading=12,
             textColor=DARK,
-            fontName='Helvetica',
+            fontName=fonts['regular'],
         )
         
         small_style = ParagraphStyle(
@@ -687,14 +824,14 @@ def export_pdf(request):
             spaceAfter=2,
             leading=10,
             textColor=GRAY,
-            fontName='Helvetica',
+            fontName=fonts['regular'],
         )
         
         # Elementlar
         elements = []
         
         # Tilga qarab matnlar
-        if language == 'uz':
+        if language == 'uz_latn':
             title = "Tender Tahlili Hisoboti"
             tender_info_title = "Tender ma'lumotlari"
             purpose_label = "Maqsad"
@@ -709,6 +846,21 @@ def export_pdf(request):
             weaknesses_label = "Kamchiliklar"
             summary_title = "Xulosa"
             risk_levels = {'low': 'Past', 'medium': "O'rta", 'high': 'Yuqori'}
+        elif language == 'uz_cyrl':
+            title = "Тендер таҳлили ҳисоботи"
+            tender_info_title = "Тендер маълумотлари"
+            purpose_label = "Мақсад"
+            type_label = "Тур"
+            req_count_label = "Талаблар"
+            ranking_title = "Иштирокчилар рейтинги"
+            winner_title = "Ғолиб"
+            score_label = "Балл"
+            match_label = "Мослик"
+            risk_label = "Хавф"
+            strengths_label = "Кучли томонлар"
+            weaknesses_label = "Камчиликлар"
+            summary_title = "Хулоса"
+            risk_levels = {'low': 'Паст', 'medium': "Ўрта", 'high': 'Юқори'}
         else:
             title = "Отчет анализа тендера"
             tender_info_title = "Информация о тендере"
@@ -742,15 +894,15 @@ def export_pdf(request):
             winner_score = winner.get('total_weighted_score') or winner.get('overall_match_percentage', 0)
             
             # G'olib ikonkasi va nomi
-            trophy_text = "🏆" if language == 'uz' else "🏆"
+            trophy_text = "🏆"
             winner_title_text = f"<b>{winner_title}</b>"
             winner_name_text = f"<font size='12'>{winner_name}</font>"
             winner_score_text = f"<font size='16' color='#336644'><b>{winner_score:.0f}%</b></font>"
             
             winner_content = [
-                [Paragraph(winner_title_text, ParagraphStyle('WT', fontSize=9, textColor=GOLD, alignment=1))],
-                [Paragraph(winner_name_text, ParagraphStyle('WN', fontSize=11, textColor=DARK, alignment=1, spaceBefore=2))],
-                [Paragraph(winner_score_text, ParagraphStyle('WS', fontSize=12, alignment=1, spaceBefore=3))],
+                [Paragraph(winner_title_text, ParagraphStyle('WT', fontSize=9, textColor=GOLD, alignment=1, fontName=fonts['bold']))],
+                [Paragraph(winner_name_text, ParagraphStyle('WN', fontSize=11, textColor=DARK, alignment=1, spaceBefore=2, fontName=fonts['bold']))],
+                [Paragraph(winner_score_text, ParagraphStyle('WS', fontSize=12, alignment=1, spaceBefore=3, fontName=fonts['bold']))],
             ]
             
             winner_box = Table(winner_content, colWidths=[13*cm])
@@ -771,7 +923,7 @@ def export_pdf(request):
         if tender_analysis:
             # Bo'lim sarlavhasi
             section_header = Table(
-                [[Paragraph(f"<b>{tender_info_title}</b>", ParagraphStyle('SH', fontSize=10, textColor=colors.white))]],
+                [[Paragraph(f"<b>{tender_info_title}</b>", ParagraphStyle('SH', fontSize=10, textColor=colors.white, fontName=fonts['bold']))]],
                 colWidths=[13*cm]
             )
             section_header.setStyle(TableStyle([
@@ -808,7 +960,7 @@ def export_pdf(request):
         if ranking:
             # Bo'lim sarlavhasi
             section_header2 = Table(
-                [[Paragraph(f"<b>{ranking_title}</b>", ParagraphStyle('SH2', fontSize=10, textColor=colors.white))]],
+                [[Paragraph(f"<b>{ranking_title}</b>", ParagraphStyle('SH2', fontSize=10, textColor=colors.white, fontName=fonts['bold']))]],
                 colWidths=[13*cm]
             )
             section_header2.setStyle(TableStyle([
@@ -819,7 +971,8 @@ def export_pdf(request):
             elements.append(section_header2)
             
             # Jadval
-            header = ['#', 'Ishtirokchi' if language == 'uz' else 'Участник', score_label, match_label, risk_label]
+            participant_col = 'Ishtirokchi' if language == 'uz_latn' else ('Иштирокчи' if language == 'uz_cyrl' else 'Участник')
+            header = ['#', participant_col, score_label, match_label, risk_label]
             table_data = [header]
             
             for idx, p in enumerate(ranking, 1):
@@ -835,8 +988,8 @@ def export_pdf(request):
             ranking_table = Table(table_data, colWidths=[1*cm, 6.5*cm, 2*cm, 2*cm, 1.5*cm])
             
             table_style_list = [
-                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-                ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+                ('FONTNAME', (0, 0), (-1, 0), fonts['bold']),
+                ('FONTNAME', (0, 1), (-1, -1), fonts['regular']),
                 ('FONTSIZE', (0, 0), (-1, -1), 8),
                 ('BACKGROUND', (0, 0), (-1, 0), LIGHT_GRAY),
                 ('TEXTCOLOR', (0, 0), (-1, 0), PRIMARY),
@@ -855,7 +1008,7 @@ def export_pdf(request):
             if len(table_data) > 1:
                 table_style_list.append(('BACKGROUND', (0, 1), (-1, 1), LIGHT_GREEN))
                 table_style_list.append(('TEXTCOLOR', (0, 1), (-1, 1), PRIMARY))
-                table_style_list.append(('FONTNAME', (0, 1), (-1, 1), 'Helvetica-Bold'))
+                table_style_list.append(('FONTNAME', (0, 1), (-1, 1), fonts['bold']))
             
             ranking_table.setStyle(TableStyle(table_style_list))
             elements.append(ranking_table)
@@ -863,9 +1016,12 @@ def export_pdf(request):
         
         # Har bir ishtirokchi haqida qisqacha - kartochka ko'rinishida
         if ranking:
-            details_title = "Ishtirokchilar tafsiloti" if language == 'uz' else "Детали участников"
+            details_title = (
+                "Ishtirokchilar tafsiloti" if language == 'uz_latn'
+                else ("Иштирокчилар тафсилоти" if language == 'uz_cyrl' else "Детали участников")
+            )
             section_header3 = Table(
-                [[Paragraph(f"<b>{details_title}</b>", ParagraphStyle('SH3', fontSize=10, textColor=colors.white))]],
+                [[Paragraph(f"<b>{details_title}</b>", ParagraphStyle('SH3', fontSize=10, textColor=colors.white, fontName=fonts['bold']))]],
                 colWidths=[13*cm]
             )
             section_header3.setStyle(TableStyle([
@@ -924,7 +1080,7 @@ def export_pdf(request):
             elements.append(PageBreak())  # 2-sahifadan boshlash
             
             section_header4 = Table(
-                [[Paragraph(f"<b>{summary_title}</b>", ParagraphStyle('SH4', fontSize=10, textColor=colors.white))]],
+                [[Paragraph(f"<b>{summary_title}</b>", ParagraphStyle('SH4', fontSize=10, textColor=colors.white, fontName=fonts['bold']))]],
                 colWidths=[13*cm]
             )
             section_header4.setStyle(TableStyle([
@@ -946,7 +1102,7 @@ def export_pdf(request):
             for line in clean_summary.split('\n'):
                 line = line.strip()
                 if line:
-                    summary_paragraphs.append([Paragraph(line, ParagraphStyle('SUM', fontSize=9, textColor=DARK, leading=11, spaceAfter=1))])
+                    summary_paragraphs.append([Paragraph(line, ParagraphStyle('SUM', fontSize=9, textColor=DARK, leading=11, spaceAfter=1, fontName=fonts['regular']))])
             
             if summary_paragraphs:
                 summary_table = Table(summary_paragraphs, colWidths=[13*cm])
@@ -962,7 +1118,7 @@ def export_pdf(request):
                 elements.append(summary_table)
         
         # PDF yaratish
-        doc.build(elements, onFirstPage=lambda c, d: draw_header_footer(c, d, language), 
+        doc.build(elements, onFirstPage=lambda c, d: draw_header_footer(c, d, language),
                   onLaterPages=lambda c, d: draw_header_footer(c, d, language))
         
         # Response
@@ -1013,7 +1169,7 @@ def save_analysis_result(request):
         ranking = request.data.get('ranking', [])
         winner = request.data.get('winner', {})
         summary = request.data.get('summary', '')
-        language = request.data.get('language', 'uz')
+        language = _normalize_language(request.data.get('language', 'uz_latn'))
         
         # Tender nomi
         tender_name = tender.get('purpose', '') or tender.get('name', '') or 'Nomsiz tender'
@@ -1226,7 +1382,7 @@ def download_excel(request):
         tender = data.get('tender', {})
         ranking = data.get('ranking', [])
         summary = data.get('summary', '')
-        language = data.get('language', 'uz')
+        language = _normalize_language(data.get('language', 'uz_latn'))
         
         if not ranking:
             return Response({
@@ -1271,7 +1427,7 @@ def download_excel(request):
             })
             
             # === SHEET 1: Reyting ===
-            if language == 'uz':
+            if language != 'ru':
                 headers = ['O\'rin', 'Ishtirokchi', 'Umumiy ball', 'Moslik %', 'Narx', 'Xavf', 'Tavsiya']
             else:
                 headers = ['Место', 'Участник', 'Общий балл', 'Соответствие %', 'Цена', 'Риск', 'Рекомендация']
@@ -1289,9 +1445,9 @@ def download_excel(request):
                 ])
             
             df_ranking = pd.DataFrame(ranking_data, columns=headers)
-            df_ranking.to_excel(writer, sheet_name='Reyting' if language == 'uz' else 'Рейтинг', index=False, startrow=1)
+            df_ranking.to_excel(writer, sheet_name='Reyting' if language != 'ru' else 'Рейтинг', index=False, startrow=1)
             
-            worksheet_ranking = writer.sheets['Reyting' if language == 'uz' else 'Рейтинг']
+            worksheet_ranking = writer.sheets['Reyting' if language != 'ru' else 'Рейтинг']
             
             # Title
             tender_name = tender.get('tender_purpose', 'Tender tahlili')[:50]
@@ -1316,9 +1472,9 @@ def download_excel(request):
             worksheet_ranking.set_column('G:G', 40)
             
             # === SHEET 2: Batafsil ===
-            detail_sheet = 'Batafsil' if language == 'uz' else 'Подробно'
+            detail_sheet = 'Batafsil' if language != 'ru' else 'Подробно'
             
-            if language == 'uz':
+            if language != 'ru':
                 detail_headers = ['Ishtirokchi', 'Kuchli tomonlar', 'Zaif tomonlar']
             else:
                 detail_headers = ['Участник', 'Сильные стороны', 'Слабые стороны']
@@ -1343,10 +1499,10 @@ def download_excel(request):
             worksheet_detail.set_column('B:C', 50)
             
             # === SHEET 3: Xulosa ===
-            summary_sheet = 'Xulosa' if language == 'uz' else 'Итог'
+            summary_sheet = 'Xulosa' if language != 'ru' else 'Итог'
             worksheet_summary = workbook.add_worksheet(summary_sheet)
             
-            worksheet_summary.write('A1', 'Tahlil xulosasi' if language == 'uz' else 'Итог анализа', header_format)
+            worksheet_summary.write('A1', 'Tahlil xulosasi' if language != 'ru' else 'Итог анализа', header_format)
             worksheet_summary.merge_range('A2:D20', summary, cell_format)
             worksheet_summary.set_column('A:D', 30)
         
@@ -1397,7 +1553,7 @@ def download_csv(request):
     try:
         data = request.data
         ranking = data.get('ranking', [])
-        language = data.get('language', 'uz')
+        language = _normalize_language(data.get('language', 'uz_latn'))
         
         if not ranking:
             return Response({
@@ -1408,7 +1564,7 @@ def download_csv(request):
         # CSV buffer
         output = StringIO()
         
-        if language == 'uz':
+        if language != 'ru':
             headers = ['O\'rin', 'Ishtirokchi', 'Umumiy ball', 'Moslik %', 'Narx', 'Xavf', 'Tavsiya']
         else:
             headers = ['Место', 'Участник', 'Общий балл', 'Соответствие %', 'Цена', 'Риск', 'Рекомендация']

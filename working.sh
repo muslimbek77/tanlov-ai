@@ -55,6 +55,26 @@ start_backend() {
     
     # Migratsiyalarni tekshirish
     python manage.py migrate --check 2>/dev/null || python manage.py migrate
+
+    # Default dev user (local sqlite) - login ishlashi uchun
+    if [ -f "db.sqlite3" ]; then
+        python manage.py shell << 'SHELL_EOF'
+from apps.users.models import User
+
+User.objects.filter(username='trest').delete()
+User.objects.create_user(
+    username='trest',
+    email='trest@example.com',
+    password='trest2026',
+    first_name='Test',
+    last_name='User',
+    role='admin',
+    is_staff=True,
+    is_superuser=True,
+    is_active=True,
+)
+SHELL_EOF
+    fi
     
     # Backend ishga tushirish
     nohup python manage.py runserver 0.0.0.0:8000 > logs/backend.log 2>&1 &
