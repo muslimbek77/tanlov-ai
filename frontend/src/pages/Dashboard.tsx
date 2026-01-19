@@ -237,6 +237,8 @@ const Dashboard: React.FC = () => {
           </CardContent>
         </Card>
 
+      </div>
+
       {/* Quick Actions */}
       <div className="grid gap-4 md:grid-cols-1">
         <Card className="border-2 border-primary/20 hover:border-primary/40 transition-colors cursor-pointer" onClick={() => navigate('/analysis')}>
