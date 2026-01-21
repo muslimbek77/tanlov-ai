@@ -1,4 +1,4 @@
-@import './styles/animations.css';
+@import "./styles/animations.css";
 
 @tailwind base;
 @tailwind components;
@@ -223,7 +223,7 @@
   .no-print {
     display: none !important;
   }
-  
+
   .print-break {
     page-break-after: always;
   }
