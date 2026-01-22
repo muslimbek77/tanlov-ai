@@ -1076,7 +1076,10 @@ const TenderAnalysis: React.FC = () => {
         </div>
       )}
 
+      
       {/* Step 3: Results */}
+
+      
       {step === "results" && (
         <div className="space-y-6">
           {/* Action Buttons */}
