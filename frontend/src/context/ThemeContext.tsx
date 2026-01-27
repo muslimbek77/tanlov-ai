@@ -59,7 +59,7 @@ const translations: Record<"uz_latn" | "ru", Record<string, string>> = {
     "antifraud.evidence": "Dalillar",
 
     // Menu
-    "menu.dashboard": "Dashboard",
+    "menu.dashboard": "Bosh sahifa",
     "menu.analysis": "Tender Tahlili",
     "menu.history": "Tahlil Tarixi",
     "menu.antifraud": "Anti-Fraud",
@@ -73,7 +73,7 @@ const translations: Record<"uz_latn" | "ru", Record<string, string>> = {
     "dashboard.participants": "Ishtirokchilar",
     "dashboard.applications": "ta ariza",
     "dashboard.evaluations": "Baholashlar",
-    "dashboard.ai_analyses": "AI tahlillari",
+    "dashboard.ai_analyses": "Sun'iy intellekt tahlillari",
     "dashboard.fraud_risks": "Fraud Xavflari",
     "dashboard.high_risk": "ta yuqori xavf",
     "dashboard.compliance": "Compliance",
@@ -84,7 +84,7 @@ const translations: Record<"uz_latn" | "ru", Record<string, string>> = {
     "dashboard.error_server": "Server bilan aloqa xatosi",
     "dashboard.tender_analysis": "Tender Tahlili",
     "dashboard.tender_analysis_desc":
-      "AI yordamida tender shartnomasini tahlil qiling va ishtirokchilarni baholang.",
+      "Sun'iy intellekt yordamida tender shartnomasini tahlil qiling va ishtirokchilarni baholang.",
     "dashboard.feature1": "Tender talablarini avtomatik aniqlash",
     "dashboard.feature2": "Ishtirokchilarni har taraflama tahlil",
     "dashboard.feature3": "G'olibni aniqlash va tavsiyalar",
@@ -100,10 +100,10 @@ const translations: Record<"uz_latn" | "ru", Record<string, string>> = {
     // Analysis
     "analysis.title": "Tender Tahlili",
     "analysis.subtitle":
-      "AI yordamida tender hujjatlarini va ishtirokchilarni tahlil qiling",
+      "Sun'iy intellekt yordamida tender hujjatlarini va ishtirokchilarni tahlil qiling",
     "analysis.tender_title": "Tender Hujjati",
     "analysis.tender_desc":
-      "AI yordamida tahlil qilish uchun tender hujjatini yuklang",
+      "Sun'iy intellekt yordamida tahlil qilish uchun tender hujjatini yuklang",
     "analysis.upload_tender": "Tender Hujjatini Yuklang",
     "analysis.upload_tender_desc":
       "Tender hujjatini PDF, DOCX yoki TXT formatda yuklang",
@@ -137,6 +137,8 @@ const translations: Record<"uz_latn" | "ru", Record<string, string>> = {
     "analysis.history_winner": "G'olib",
     "analysis.history_participant": "ishtirokchi",
     "analysis.history_view": "Ko'rish",
+    "analysis.start_analysis_wait":
+      "Sun'iy intellekt tahlil jarayonini boshlagan, iltimos kuting.",
 
     // Steps
     "analysis.steps.tender": "Tender",
@@ -152,13 +154,24 @@ const translations: Record<"uz_latn" | "ru", Record<string, string>> = {
     "analysis.summary": "Xulosa",
 
     // History
-    "history.title": "Tahlil Tarixi",
-    "history.subtitle": "Barcha tahlil qilingan tenderlar va natijalar",
-    "history.empty": "Tahlil tarixi bo'sh",
-    "history.empty_desc": "Tahlil natijalari bu yerda saqlanadi",
-    "history.start_first": "Birinchi tahlilni boshlang",
+    "history.title": "Tahlillar tarixi",
+    "history.subtitle": "Tender tahlillarini ko‘rish va boshqarish",
+    "history.empty": "Tahlillar mavjud emas",
+    "history.empty_desc":
+      "Natijalarni bu yerda ko‘rish uchun birinchi tender tahlilini boshlang",
+    "history.start_first": "Birinchi tahlilni boshlash",
+    "common.search": "Qidirish",
+
+    "analysis.recommendation": "Tavsiya",
+
     "history.select": "Tahlilni tanlang",
-    "history.select_desc": "Chapdagi ro'yxatdan tahlilni tanlang",
+    "history.select_desc":
+      "Tafsilotlarni ko‘rish uchun ro‘yxatdan tahlilni tanlang",
+
+    "history.loading": "Yuklanmoqda...",
+    "history.error": "Tarixni yuklashda xatolik",
+    "history.retry": "Qayta urinish",
+
     "antifraud.collusion_desc":
       "Bog'liq kompaniyalar, oldindan kelishilgan g'olib",
     "antifraud.tender_info": "Tender Ma'lumotlari (ixtiyoriy)",
@@ -174,7 +187,7 @@ const translations: Record<"uz_latn" | "ru", Record<string, string>> = {
     "antifraud.additional_info": "Qo'shimcha ma'lumot",
     "antifraud.participant": "Ishtirokchi",
     "antifraud.analyze": "Tahlil qilish",
-    "antifraud.analyzing": "AI tahlil qilmoqda...",
+    "antifraud.analyzing": "Sun'iy intellekt tahlil qilmoqda...",
     "antifraud.min_participants": "Kamida 2 ta ishtirokchi kiritish kerak",
     "antifraud.server_error": "Server bilan aloqa xatosi",
     "antifraud.analysis_error": "Tahlilda xatolik",
@@ -223,7 +236,8 @@ const translations: Record<"uz_latn" | "ru", Record<string, string>> = {
     "settings.about_desc":
       "Tanlov AI - tender jarayonlarini sun'iy intellekt yordamida tahlil qilish tizimi. Ishtirokchilarni baholash, firibgarlikni aniqlash va muvofiqlikni tekshirish imkoniyatlarini taqdim etadi.",
     "settings.features": "Imkoniyatlar",
-    "settings.feature1": "AI yordamida tender hujjatlarini tahlil qilish",
+    "settings.feature1":
+      "Sun'iy intellekt yordamida tender hujjatlarini tahlil qilish",
     "settings.feature2": "Ishtirokchilarni avtomatik baholash va reyting",
     "settings.feature3": "Firibgarlik va korrupsiya belgilarini aniqlash",
     "settings.feature4": "O'RQ talablariga muvofiqlikni tekshirish",
@@ -235,7 +249,7 @@ const translations: Record<"uz_latn" | "ru", Record<string, string>> = {
     "common.delete": "O'chirish",
     "common.edit": "Tahrirlash",
     "common.view": "Ko'rish",
-    "common.search": "Qidirish",
+   
     "common.filter": "Filtr",
     "common.new": "Yangi",
     "common.add": "Qo'shish",
@@ -525,7 +539,7 @@ export const latinToCyrillicUz = (input: string): string => {
     D: "Д",
     d: "д",
     E: "Э",
-    e: "э",
+    e: "е",
     F: "Ф",
     f: "ф",
     G: "Г",

@@ -656,6 +656,7 @@ const TenderAnalysis: React.FC = () => {
     [t],
   );
 
+
   return (
     <div className="space-y-8 relative z-10">
       {/* Header */}
@@ -1068,7 +1069,7 @@ const TenderAnalysis: React.FC = () => {
               {loading && (
                 <div className="mt-4 flex items-center justify-center gap-2 text-sm text-muted-foreground animate-pulse">
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>SI Tahlil jarayonini boshlagan, iltimos kuting.</span>
+                  <span>{t("analysis.start_analysis_wait")}</span>
                 </div>
               )}
             </CardContent>
@@ -1077,6 +1078,7 @@ const TenderAnalysis: React.FC = () => {
       )}
 
       {/* Step 3: Results */}
+
       {step === "results" && (
         <div className="space-y-6">
           {/* Action Buttons */}
@@ -1108,7 +1110,7 @@ const TenderAnalysis: React.FC = () => {
                     <Download className="w-4 h-4 mr-2" />
                     Excel
                   </Button>
-                  <Button
+                  {/* <Button
                     variant="outline"
                     onClick={() => {
                       setStep("participants");
@@ -1117,7 +1119,7 @@ const TenderAnalysis: React.FC = () => {
                   >
                     <Plus className="w-4 h-4 mr-2" />
                     {t("analysis.add_new_participant")}
-                  </Button>
+                  </Button> */}
                   <Button variant="outline" onClick={resetAnalysis}>
                     {t("analysis.new_analysis")}
                   </Button>
@@ -1156,12 +1158,14 @@ const TenderAnalysis: React.FC = () => {
                       {t("analysis.match")}
                     </p>
                   </div>
-                  <div className="text-center">
-                    {getRiskBadge(winner.risk_level)}
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {t("analysis.risk_level")}
-                    </p>
-                  </div>
+                  {winner.risk_level && (
+                    <div className="text-center">
+                      {getRiskBadge(winner.risk_level)}
+                      <p className="text-sm text-muted-foreground mt-1">
+                        {t("analysis.risk_level")}
+                      </p>
+                    </div>
+                  )}
                 </div>
                 <p className="mt-4 text-muted-foreground">
                   {winner.recommendation}
@@ -1200,7 +1204,7 @@ const TenderAnalysis: React.FC = () => {
                         </span>
                       </div>
                       <div className="flex items-center space-x-4">
-                        {getRiskBadge(p.risk_level)}
+                        {p.risk_level && getRiskBadge(p.risk_level)}
                         <span className="text-2xl font-bold text-primary">
                           {p.total_weighted_score?.toFixed(1) ||
                             p.overall_match_percentage ||
