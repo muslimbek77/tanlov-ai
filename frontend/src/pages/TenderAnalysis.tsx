@@ -656,6 +656,7 @@ const TenderAnalysis: React.FC = () => {
     [t],
   );
 
+
   return (
     <div className="space-y-8 relative z-10">
       {/* Header */}
@@ -1109,7 +1110,7 @@ const TenderAnalysis: React.FC = () => {
                     <Download className="w-4 h-4 mr-2" />
                     Excel
                   </Button>
-                  <Button
+                  {/* <Button
                     variant="outline"
                     onClick={() => {
                       setStep("participants");
@@ -1118,7 +1119,7 @@ const TenderAnalysis: React.FC = () => {
                   >
                     <Plus className="w-4 h-4 mr-2" />
                     {t("analysis.add_new_participant")}
-                  </Button>
+                  </Button> */}
                   <Button variant="outline" onClick={resetAnalysis}>
                     {t("analysis.new_analysis")}
                   </Button>
