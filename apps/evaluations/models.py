@@ -162,6 +162,9 @@ class TenderAnalysisResult(models.Model):
     Frontend'dan kelgan tahlil natijalarini bazaga saqlaydi.
     """
     
+    # Foydalanuvchi
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, blank=True, related_name='analysis_results', verbose_name='Foydalanuvchi')
+    
     # Tender ma'lumotlari
     tender_name = models.CharField(max_length=500, verbose_name='Tender nomi')
     tender_type = models.CharField(max_length=100, null=True, blank=True, verbose_name='Tender turi')
