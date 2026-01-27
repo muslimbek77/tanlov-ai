@@ -59,7 +59,7 @@ const translations: Record<"uz_latn" | "ru", Record<string, string>> = {
     "antifraud.evidence": "Dalillar",
 
     // Menu
-    "menu.dashboard": "Dashboard",
+    "menu.dashboard": "Bosh sahifa",
     "menu.analysis": "Tender Tahlili",
     "menu.history": "Tahlil Tarixi",
     "menu.antifraud": "Anti-Fraud",
@@ -154,13 +154,24 @@ const translations: Record<"uz_latn" | "ru", Record<string, string>> = {
     "analysis.summary": "Xulosa",
 
     // History
-    "history.title": "Tahlil Tarixi",
-    "history.subtitle": "Barcha tahlil qilingan tenderlar va natijalar",
-    "history.empty": "Tahlil tarixi bo'sh",
-    "history.empty_desc": "Tahlil natijalari bu yerda saqlanadi",
-    "history.start_first": "Birinchi tahlilni boshlang",
+    "history.title": "Tahlillar tarixi",
+    "history.subtitle": "Tender tahlillarini ko‘rish va boshqarish",
+    "history.empty": "Tahlillar mavjud emas",
+    "history.empty_desc":
+      "Natijalarni bu yerda ko‘rish uchun birinchi tender tahlilini boshlang",
+    "history.start_first": "Birinchi tahlilni boshlash",
+    "common.search": "Qidirish",
+
+    "analysis.recommendation": "Tavsiya",
+
     "history.select": "Tahlilni tanlang",
-    "history.select_desc": "Chapdagi ro'yxatdan tahlilni tanlang",
+    "history.select_desc":
+      "Tafsilotlarni ko‘rish uchun ro‘yxatdan tahlilni tanlang",
+
+    "history.loading": "Yuklanmoqda...",
+    "history.error": "Tarixni yuklashda xatolik",
+    "history.retry": "Qayta urinish",
+
     "antifraud.collusion_desc":
       "Bog'liq kompaniyalar, oldindan kelishilgan g'olib",
     "antifraud.tender_info": "Tender Ma'lumotlari (ixtiyoriy)",
@@ -238,7 +249,7 @@ const translations: Record<"uz_latn" | "ru", Record<string, string>> = {
     "common.delete": "O'chirish",
     "common.edit": "Tahrirlash",
     "common.view": "Ko'rish",
-    "common.search": "Qidirish",
+   
     "common.filter": "Filtr",
     "common.new": "Yangi",
     "common.add": "Qo'shish",
@@ -528,7 +539,7 @@ export const latinToCyrillicUz = (input: string): string => {
     D: "Д",
     d: "д",
     E: "Э",
-    e: "э",
+    e: "е",
     F: "Ф",
     f: "ф",
     G: "Г",
