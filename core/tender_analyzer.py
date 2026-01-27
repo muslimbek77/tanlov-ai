@@ -40,6 +40,7 @@ class TenderRequirement:
     description: str
     is_mandatory: bool
     weight: float  # 0-1 orasida vazn
+    evaluation_criteria: str = ''  # Baholash mezonlari
     
 
 @dataclass
