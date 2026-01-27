@@ -36,6 +36,9 @@ def dashboard_stats(request):
     from django.db.models import Sum
     
     try:
+        # Foydalanuvchi autentifikatsiya qilingan bo'lsa, faqat uning ma'lumotlari
+        user = request.user if request.user.is_authenticated else None
+        
         # Eski modellardan
         total_tenders = Tender.objects.count()
         active_tenders = Tender.objects.filter(status='active').count()
@@ -47,17 +50,29 @@ def dashboard_stats(request):
         compliance_checks = ComplianceCheck.objects.count()
         compliance_passed = ComplianceCheck.objects.filter(status='passed').count()
         
-        # Yangi TenderAnalysisResult dan
-        analysis_count = TenderAnalysisResult.objects.count()
-        analysis_participants = TenderAnalysisResult.objects.aggregate(
+        # Yangi TenderAnalysisResult dan - faqat foydalanuvchining ma'lumotlari
+        if user:
+            analysis_queryset = TenderAnalysisResult.objects.filter(user=user)
+        else:
+            analysis_queryset = TenderAnalysisResult.objects.all()
+        
+        analysis_count = analysis_queryset.count()
+        analysis_participants = analysis_queryset.aggregate(
             total=Sum('participant_count')
         )['total'] or 0
         
-        # Eng katta qiymatlarni olish
-        total_tenders = max(total_tenders, analysis_count)
-        total_evaluations = max(total_evaluations, analysis_count)
-        total_participants = max(total_participants, analysis_participants)
-        active_tenders = max(active_tenders, analysis_count)
+        # Foydalanuvchi autentifikatsiya qilingan bo'lsa, faqat uning tahlillari
+        if user:
+            total_tenders = analysis_count
+            total_evaluations = analysis_count
+            total_participants = analysis_participants
+            active_tenders = analysis_count
+        else:
+            # Eski mantiq - barcha ma'lumotlar
+            total_tenders = max(total_tenders, analysis_count)
+            total_evaluations = max(total_evaluations, analysis_count)
+            total_participants = max(total_participants, analysis_participants)
+            active_tenders = max(active_tenders, analysis_count)
         
         return JsonResponse({
             "success": True,
