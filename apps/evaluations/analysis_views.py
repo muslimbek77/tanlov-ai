@@ -7,7 +7,7 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import api_view, action, permission_classes
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
 from django.http import HttpResponse
@@ -1148,7 +1148,7 @@ from .models import TenderAnalysisResult
 
 
 @api_view(['POST'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def save_analysis_result(request):
     """
     Tahlil natijasini bazaga saqlash
@@ -1162,6 +1162,8 @@ def save_analysis_result(request):
         - winner: G'olib (dict)
         - summary: Xulosa (str)
         - language: Til (str)
+    
+    Requires: IsAuthenticated
     """
     try:
         tender = request.data.get('tender', {})
@@ -1181,6 +1183,7 @@ def save_analysis_result(request):
         
         # Bazaga saqlash
         result = TenderAnalysisResult.objects.create(
+            user=request.user if request.user.is_authenticated else None,
             tender_name=tender_name,
             tender_type=tender_type,
             tender_data=tender,
@@ -1208,6 +1211,7 @@ def save_analysis_result(request):
 
 
 @api_view(['GET'])
+@permission_classes([IsAuthenticated])
 def get_analysis_history(request):
     """
     Tahlil tarixini olish
@@ -1217,13 +1221,17 @@ def get_analysis_history(request):
     Query params:
         - limit: Nechta natija (default: 20)
         - offset: Qayerdan boshlash (default: 0)
+    
+    Requires: IsAuthenticated
     """
     try:
         limit = int(request.GET.get('limit', 20))
         offset = int(request.GET.get('offset', 0))
         
-        total = TenderAnalysisResult.objects.count()
-        results = TenderAnalysisResult.objects.all()[offset:offset + limit]
+        # Filter by current user
+        queryset = TenderAnalysisResult.objects.filter(user=request.user)
+        total = queryset.count()
+        results = queryset.all()[offset:offset + limit]
         
         history = []
         for r in results:
@@ -1254,14 +1262,24 @@ def get_analysis_history(request):
 
 
 @api_view(['GET'])
+@permission_classes([IsAuthenticated])
 def get_analysis_detail(request, pk):
     """
     Bitta tahlil natijasini olish
     
     GET /api/evaluations/history/<id>/
+    
+    Requires: IsAuthenticated
     """
     try:
         result = TenderAnalysisResult.objects.get(pk=pk)
+        
+        # Check if user owns this result
+        if result.user and result.user != request.user:
+            return Response({
+                'success': False,
+                'error': 'Sizda bu natijani ko\'rish huquqi yo\'q'
+            }, status=status.HTTP_403_FORBIDDEN)
         
         return Response({
             'success': True,
@@ -1294,17 +1312,27 @@ def get_analysis_detail(request, pk):
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-@api_view(['DELETE'])
 @api_view(['DELETE', 'POST'])
+@permission_classes([IsAuthenticated])
 def delete_analysis_result(request, pk):
     """
     Tahlil natijasini o'chirish
     
     DELETE /api/evaluations/history/<id>/
     POST /api/evaluations/history/<id>/delete/
+    
+    Requires: IsAuthenticated
     """
     try:
         result = TenderAnalysisResult.objects.get(pk=pk)
+        
+        # User-specific deletion check
+        if hasattr(result, 'user') and result.user and result.user != request.user:
+            return Response({
+                'success': False,
+                'error': 'Sizda bu natijani o\'chirish huquqi yo\'q'
+            }, status=status.HTTP_403_FORBIDDEN)
+        
         result.delete()
         
         return Response({

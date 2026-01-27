@@ -1,0 +1,35 @@
+{
+  "version": "0.2",
+  "language": "en",
+  "dictionaries": ["typescript", "node"],
+  "ignoreWords": [
+    "tanlov", "muammolar", "yechimlar", "muammosi", "muammo", "ishlamayapti",
+    "autentifikatsiya", "yechim", "funksiyasiga", "qoshildi", "decoratorlar",
+    "olib", "tashlandi", "foydalanuvchi", "ozining", "natijalaritagina",
+    "ochira", "oladi", "soatda", "amal", "qilardi", "sistemasi", "soatdan",
+    "soatga", "qisqartirdi", "faollashtirdi", "yangi", "yaratildi", "sorovga",
+    "qoshadi", "xatolikda", "qiladi", "sorodni", "qaytadan", "yuboradi",
+    "sorovlar", "vaqtda", "qilsa", "xato", "bolmasligi", "uchun",
+    "funksiyasini", "yangilandi", "butun", "modeliga", "tenderanalysisresult",
+    "quyidagi", "endpointlarga", "makemigrations", "qiling", "oling", "sorovi",
+    "yuboring", "qilish", "tahlili", "sahifasida", "ochirish", "tugmasini",
+    "bosing", "avtomatik", "ishlaydi", "soat", "tugaganda", "xatolik", "orqali",
+    "yuboriladi", "qilishda", "datalarini", "faqat", "yaratish", "qolini",
+    "tekshirish", "yonaltirish", "saqlash", "axios", "interceptor", "venv",
+    "pycache", "isoformat", "jwt", "simplejwt"
+  ],
+  "ignorePaths": [
+    "node_modules",
+    "venv",
+    ".git",
+    "build",
+    "dist",
+    "__pycache__",
+    ".cspellrc.json",
+    "FIXES_SUMMARY.md"
+  ],
+  "ignoreRegExpList": [
+    "\\b[a-z]+\\'[a-z]+\\b",
+    "^\\s*\"[a-z]+\":"
+  ]
+}

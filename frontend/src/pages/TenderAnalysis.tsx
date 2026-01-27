@@ -290,13 +290,53 @@ const TenderAnalysis: React.FC = () => {
       try {
         const response = await fetch(`${API_BASE}/history/${id}/delete/`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${localStorage.getItem('access_token')}`
+          },
         });
 
-        if (response.ok) {
+        if (response.status === 401) {
+          // Token expired, refresh it
+          const refreshToken = localStorage.getItem('refresh_token');
+          if (refreshToken) {
+            const refreshResponse = await fetch(`${API_BASE.replace('/evaluations', '/auth')}/token/refresh/`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ refresh: refreshToken }),
+            });
+
+            if (refreshResponse.ok) {
+              const data = await refreshResponse.json();
+              localStorage.setItem('access_token', data.access);
+              if (data.refresh) {
+                localStorage.setItem('refresh_token', data.refresh);
+              }
+
+              // Retry delete with new token
+              const retryResponse = await fetch(`${API_BASE}/history/${id}/delete/`, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  "Authorization": `Bearer ${data.access}`
+                },
+              });
+
+              if (retryResponse.ok) {
+                window.dispatchEvent(
+                  new CustomEvent("analysisDeleted", { detail: { id } }),
+                );
+              } else {
+                console.error("Delete failed:", retryResponse.statusText);
+              }
+            }
+          }
+        } else if (response.ok) {
           window.dispatchEvent(
             new CustomEvent("analysisDeleted", { detail: { id } }),
           );
+        } else {
+          console.error("Delete failed:", response.statusText);
         }
       } catch (err) {
         console.error("Delete error:", err);

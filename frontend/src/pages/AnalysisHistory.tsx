@@ -194,11 +194,57 @@ const AnalysisHistory = () => {
 
   const deleteResult = async (id) => {
     try {
-      // Add your delete API call here
-      const updated = savedResults.filter((r) => r.id !== id);
-      setSavedResults(updated);
-      if (selectedResult?.id === id) {
-        setSelectedResult(null);
+      const accessToken = localStorage.getItem('access_token');
+      const refreshToken = localStorage.getItem('refresh_token');
+      
+      let response = await fetch(`${API_ENDPOINTS.evaluations}/history/${id}/delete/`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          ...(accessToken && { "Authorization": `Bearer ${accessToken}` })
+        },
+      });
+
+      // If 401, try to refresh token
+      if (response.status === 401 && refreshToken) {
+        try {
+          const refreshResponse = await fetch(`${API_ENDPOINTS.auth}/token/refresh/`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ refresh: refreshToken }),
+          });
+
+          if (refreshResponse.ok) {
+            const data = await refreshResponse.json();
+            localStorage.setItem('access_token', data.access);
+            if (data.refresh) {
+              localStorage.setItem('refresh_token', data.refresh);
+            }
+
+            // Retry with new token
+            response = await fetch(`${API_ENDPOINTS.evaluations}/history/${id}/delete/`, {
+              method: "DELETE",
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${data.access}`
+              },
+            });
+          }
+        } catch (refreshErr) {
+          console.error("Token refresh failed:", refreshErr);
+          window.location.href = '/login';
+          return;
+        }
+      }
+
+      if (response.ok) {
+        const updated = savedResults.filter((r) => r.id !== id);
+        setSavedResults(updated);
+        if (selectedResult?.id === id) {
+          setSelectedResult(null);
+        }
+      } else {
+        console.error("Delete failed:", response.statusText);
       }
     } catch (e) {
       console.error("Error deleting result:", e);
