@@ -142,7 +142,7 @@ def extract_text_from_file(file) -> str:
 
 
 @api_view(['POST'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def analyze_tender(request):
     """
     Tender shartnomasini tahlil qilish
@@ -286,7 +286,7 @@ Quyidagi matn tender shartnomasi yoki unga o'xshash rasmiy hujjatmi? Mazmunan va
 
 
 @api_view(['POST'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def analyze_participant(request):
     """
     Ishtirokchi hujjatlarini tahlil qilish
