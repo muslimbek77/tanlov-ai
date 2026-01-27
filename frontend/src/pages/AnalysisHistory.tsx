@@ -19,6 +19,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { useTheme } from "../context/ThemeContext";
+import { API_ENDPOINTS } from "../config/api";
 
 // Mock translation function - replace with your actual implementation
 
@@ -146,12 +147,25 @@ Progress.displayName = "Progress";
 const AnalysisHistory = () => {
   const navigate = useNavigate();
   const { t } = useTheme();
-  const [savedResults, setSavedResults] = useState([]);
-  const [expandedId, setExpandedId] = useState(null);
-  const [selectedResult, setSelectedResult] = useState(null);
+  
+  interface AnalysisResult {
+    id: number;
+    date: string;
+    tender: string;
+    tender_type?: string;
+    winner: string;
+    winner_score?: number;
+    participantCount: number;
+    ranking: any[];
+    summary: string;
+  }
+  
+  const [savedResults, setSavedResults] = useState<AnalysisResult[]>([]);
+  const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [selectedResult, setSelectedResult] = useState<AnalysisResult | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     loadSavedResults();
@@ -192,7 +206,7 @@ const AnalysisHistory = () => {
     }
   };
 
-  const deleteResult = async (id) => {
+  const deleteResult = async (id: number) => {
     try {
       const accessToken = localStorage.getItem('access_token');
       const refreshToken = localStorage.getItem('refresh_token');
@@ -263,12 +277,12 @@ const AnalysisHistory = () => {
     }
   };
 
-  const continueAnalysis = (result) => {
+  const continueAnalysis = (result: AnalysisResult) => {
     // Implement navigation to analysis page
     navigate("/analysis?continue=true");
   };
 
-  const getRiskBadge = (level) => {
+  const getRiskBadge = (level: string) => {
     const styles = {
       low: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
       medium:
@@ -277,14 +291,14 @@ const AnalysisHistory = () => {
     };
     return (
       <span
-        className={`px-3 py-1 rounded-full text-xs font-medium border ${styles[level] || "bg-gray-500/10 text-gray-500"}`}
+        className={`px-3 py-1 rounded-full text-xs font-medium border ${styles[level as keyof typeof styles] || "bg-gray-500/10 text-gray-500"}`}
       >
         {t(`risk.${level}`)}
       </span>
     );
   };
 
-  const formatDate = (dateStr) => {
+  const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
     return date.toLocaleDateString("uz-UZ", {
       year: "numeric",
@@ -301,7 +315,7 @@ const AnalysisHistory = () => {
       r.winner?.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
-  const getScoreDisplay = (participant) => {
+  const getScoreDisplay = (participant: any) => {
     return (
       participant.total_weighted_score ||
       participant.overall_match_percentage ||
@@ -571,7 +585,7 @@ const AnalysisHistory = () => {
                     </CardHeader>
                     <CardContent className="p-4">
                       <div className="space-y-3">
-                        {selectedResult.ranking.map((p, index) => {
+                        {selectedResult.ranking.map((p: any, index: number) => {
                           const score = getScoreDisplay(p);
                           const isExpanded = expandedId === index;
                           return (
@@ -642,7 +656,7 @@ const AnalysisHistory = () => {
                                     <ul className="space-y-1 text-gray-700 dark:text-gray-300">
                                       {(p.strengths || [])
                                         .slice(0, 5)
-                                        .map((s, i) => (
+                                        .map((s: string, i: number) => (
                                           <li
                                             key={i}
                                             className="flex items-start gap-2"
@@ -663,7 +677,7 @@ const AnalysisHistory = () => {
                                     <ul className="space-y-1 text-gray-700 dark:text-gray-300">
                                       {(p.weaknesses || [])
                                         .slice(0, 5)
-                                        .map((w, i) => (
+                                        .map((w: string, i: number) => (
                                           <li
                                             key={i}
                                             className="flex items-start gap-2"
