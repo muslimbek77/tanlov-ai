@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { useTheme } from "../context/ThemeContext";
 import { API_ENDPOINTS } from "../config/api";
+import apiClient from "../lib/api-client";
 
 // Mock translation function - replace with your actual implementation
 
@@ -176,96 +177,14 @@ const AnalysisHistory = () => {
     setError(null);
 
     try {
-      let token = localStorage.getItem("access_token");
-      const refreshToken = localStorage.getItem("refresh_token");
-
-      // If no token, try to refresh
-      if (!token && refreshToken) {
-        const refreshResponse = await fetch(
-          `${API_ENDPOINTS.auth}/token/refresh/`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ refresh: refreshToken }),
-          },
-        );
-
-        if (refreshResponse.ok) {
-          const data = await refreshResponse.json();
-          token = data.access;
-          localStorage.setItem("access_token", data.access);
-          if (data.refresh) {
-            localStorage.setItem("refresh_token", data.refresh);
-          }
-        } else {
-          setError("Authentication required. Please login.");
-          setLoading(false);
-          return;
-        }
-      }
-
-      if (!token) {
-        setError("No authentication token. Please login.");
-        setLoading(false);
-        return;
-      }
-
-      let response = await fetch(
-        `${API_ENDPOINTS.evaluations}/history/`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        },
-      );
-
-      // If 401, try to refresh token
-      if (response.status === 401 && refreshToken) {
-        const refreshResponse = await fetch(
-          `${API_ENDPOINTS.auth}/token/refresh/`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ refresh: refreshToken }),
-          },
-        );
-
-        if (refreshResponse.ok) {
-          const data = await refreshResponse.json();
-          const newToken = data.access;
-          localStorage.setItem("access_token", newToken);
-          if (data.refresh) {
-            localStorage.setItem("refresh_token", data.refresh);
-          }
-
-          // Retry with new token
-          response = await fetch(
-            `${API_ENDPOINTS.evaluations}/history/`,
-            {
-              method: "GET",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${newToken}`,
-              },
-            },
-          );
-        }
-      }
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch history: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-
-      if (data.success && data.history) {
-        setSavedResults(data.history);
+      const response = await apiClient.get('/evaluations/history/');
+      
+      if (response.data.success && response.data.history) {
+        setSavedResults(response.data.history);
       }
     } catch (e: any) {
       console.error("Error loading results:", e);
-      setError(e.message);
+      setError(e.response?.data?.error || e.message || "Failed to load history");
     } finally {
       setLoading(false);
     }
@@ -273,60 +192,16 @@ const AnalysisHistory = () => {
 
   const deleteResult = async (id: number) => {
     try {
-      const accessToken = localStorage.getItem('access_token');
-      const refreshToken = localStorage.getItem('refresh_token');
+      await apiClient.delete(`/evaluations/history/${id}/delete/`);
       
-      let response = await fetch(`${API_ENDPOINTS.evaluations}/history/${id}/delete/`, {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-          ...(accessToken && { "Authorization": `Bearer ${accessToken}` })
-        },
-      });
-
-      // If 401, try to refresh token
-      if (response.status === 401 && refreshToken) {
-        try {
-          const refreshResponse = await fetch(`${API_ENDPOINTS.auth}/token/refresh/`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ refresh: refreshToken }),
-          });
-
-          if (refreshResponse.ok) {
-            const data = await refreshResponse.json();
-            localStorage.setItem('access_token', data.access);
-            if (data.refresh) {
-              localStorage.setItem('refresh_token', data.refresh);
-            }
-
-            // Retry with new token
-            response = await fetch(`${API_ENDPOINTS.evaluations}/history/${id}/delete/`, {
-              method: "DELETE",
-              headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${data.access}`
-              },
-            });
-          }
-        } catch (refreshErr) {
-          console.error("Token refresh failed:", refreshErr);
-          window.location.href = '/login';
-          return;
-        }
+      const updated = savedResults.filter((r) => r.id !== id);
+      setSavedResults(updated);
+      if (selectedResult?.id === id) {
+        setSelectedResult(null);
       }
-
-      if (response.ok) {
-        const updated = savedResults.filter((r) => r.id !== id);
-        setSavedResults(updated);
-        if (selectedResult?.id === id) {
-          setSelectedResult(null);
-        }
-      } else {
-        console.error("Delete failed:", response.statusText);
-      }
-    } catch (e) {
+    } catch (e: any) {
       console.error("Error deleting result:", e);
+      setError(e.response?.data?.error || e.message || "Failed to delete result");
     }
   };
 
