@@ -11,6 +11,8 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
 from django.http import HttpResponse
+from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiResponse, OpenApiExample
+from drf_spectacular.types import OpenApiTypes
 import os
 import logging
 import PyPDF2
@@ -31,6 +33,7 @@ from reportlab.pdfbase.pdfmetrics import registerFontFamily
 
 from core.tender_analyzer import tender_analyzer
 from core.services import document_processor
+from .models import TenderAnalysisResult
 
 logger = logging.getLogger(__name__)
 
@@ -660,6 +663,11 @@ def full_analysis(request):
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+@extend_schema(
+    operation_id='get_tender_requirements',
+    responses={200: OpenApiTypes.OBJECT},
+    tags=['evaluations']
+)
 @api_view(['GET'])
 def get_tender_requirements(request):
     """
@@ -677,6 +685,12 @@ def get_tender_requirements(request):
     })
 
 
+@extend_schema(
+    operation_id='reset_analysis',
+    request=OpenApiTypes.NONE,
+    responses={200: OpenApiTypes.OBJECT},
+    tags=['evaluations']
+)
 @api_view(['POST'])
 def reset_analysis(request):
     """
@@ -1144,9 +1158,13 @@ def export_pdf(request):
 # TAHLIL NATIJALARINI SAQLASH VA OLISH API
 # ============================================
 
-from .models import TenderAnalysisResult
 
-
+@extend_schema(
+    operation_id='save_analysis_result',
+    request=OpenApiTypes.OBJECT,
+    responses={201: OpenApiTypes.OBJECT},
+    tags=['evaluations']
+)
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def save_analysis_result(request):
@@ -1210,6 +1228,15 @@ def save_analysis_result(request):
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+@extend_schema(
+    operation_id='list_analysis_history',
+    parameters=[
+        OpenApiParameter('limit', OpenApiTypes.INT, description='Number of results'),
+        OpenApiParameter('offset', OpenApiTypes.INT, description='Starting position'),
+    ],
+    responses={200: OpenApiTypes.OBJECT},
+    tags=['evaluations']
+)
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def get_analysis_history(request):
@@ -1261,6 +1288,12 @@ def get_analysis_history(request):
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+@extend_schema(
+    operation_id='retrieve_analysis_detail',
+    parameters=[OpenApiParameter('pk', OpenApiTypes.INT, OpenApiParameter.PATH)],
+    responses={200: OpenApiTypes.OBJECT},
+    tags=['evaluations']
+)
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def get_analysis_detail(request, pk):
@@ -1710,6 +1743,11 @@ def get_chart_data(request):
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+@extend_schema(
+    operation_id='get_recent_activities',
+    responses={200: OpenApiTypes.OBJECT},
+    tags=['evaluations']
+)
 @api_view(['GET'])
 def get_recent_activities(request):
     """

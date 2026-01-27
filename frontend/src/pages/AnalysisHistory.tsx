@@ -176,10 +176,42 @@ const AnalysisHistory = () => {
     setError(null);
 
     try {
-      const token = localStorage.getItem("access_token"); // yoki authToken
+      let token = localStorage.getItem("access_token");
+      const refreshToken = localStorage.getItem("refresh_token");
 
-      const response = await fetch(
-        "https://tanlov.kuprikqurilish.uz/api/evaluations/history/",
+      // If no token, try to refresh
+      if (!token && refreshToken) {
+        const refreshResponse = await fetch(
+          `${API_ENDPOINTS.auth}/token/refresh/`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ refresh: refreshToken }),
+          },
+        );
+
+        if (refreshResponse.ok) {
+          const data = await refreshResponse.json();
+          token = data.access;
+          localStorage.setItem("access_token", data.access);
+          if (data.refresh) {
+            localStorage.setItem("refresh_token", data.refresh);
+          }
+        } else {
+          setError("Authentication required. Please login.");
+          setLoading(false);
+          return;
+        }
+      }
+
+      if (!token) {
+        setError("No authentication token. Please login.");
+        setLoading(false);
+        return;
+      }
+
+      let response = await fetch(
+        `${API_ENDPOINTS.evaluations}/history/`,
         {
           method: "GET",
           headers: {
@@ -189,8 +221,41 @@ const AnalysisHistory = () => {
         },
       );
 
+      // If 401, try to refresh token
+      if (response.status === 401 && refreshToken) {
+        const refreshResponse = await fetch(
+          `${API_ENDPOINTS.auth}/token/refresh/`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ refresh: refreshToken }),
+          },
+        );
+
+        if (refreshResponse.ok) {
+          const data = await refreshResponse.json();
+          const newToken = data.access;
+          localStorage.setItem("access_token", newToken);
+          if (data.refresh) {
+            localStorage.setItem("refresh_token", data.refresh);
+          }
+
+          // Retry with new token
+          response = await fetch(
+            `${API_ENDPOINTS.evaluations}/history/`,
+            {
+              method: "GET",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${newToken}`,
+              },
+            },
+          );
+        }
+      }
+
       if (!response.ok) {
-        throw new Error("Failed to fetch history");
+        throw new Error(`Failed to fetch history: ${response.statusText}`);
       }
 
       const data = await response.json();
