@@ -146,7 +146,7 @@ const TenderAnalysis: React.FC = () => {
   const [searchParams] = useSearchParams();
   const { language, t } = useTheme();
 
-  const getAuthHeaders = useCallback(() => {
+  const getAuthHeaders = useCallback((): Record<string, string> => {
     const token = localStorage.getItem('access_token');
     return token ? { Authorization: `Bearer ${token}` } : {};
   }, []);
@@ -600,6 +600,8 @@ const TenderAnalysis: React.FC = () => {
         body: JSON.stringify({ participants: analyses, language }),
       });
 
+      let compareData: any;
+
         if (compareResponse.status === 401) {
           const refreshToken = localStorage.getItem('refresh_token');
           if (refreshToken) {
@@ -614,24 +616,28 @@ const TenderAnalysis: React.FC = () => {
                 localStorage.setItem('access_token', refreshData.access);
                 const retryResponse = await fetch(`${API_BASE}/compare-participants/`, {
                   method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ participants: analyses, language }),
-                });
-                const retryData = await retryResponse.json();
-                if (retryData.success) {
-                  compareData = retryData;
-                }
+                headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+                body: JSON.stringify({ participants: analyses, language }),
+              });
+              const retryData = await retryResponse.json();
+              if (retryData.success) {
+                compareData = retryData;
+              }
               }
             } catch (e) {
               console.error("Refresh failed:", e);
             }
           }
+        if (!compareData) {
           setError('Iltimos, qayta kiring');
           setLoading(false);
           return;
         }
+        }
 
-      const compareData = await compareResponse.json();
+      if (!compareData) {
+        compareData = await compareResponse.json();
+      }
 
         if (compareResponse.ok && compareData.success) {
         setRanking(compareData.ranking);
