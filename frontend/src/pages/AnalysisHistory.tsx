@@ -368,7 +368,7 @@ const AnalysisHistory = () => {
     );
   };
 
-  function formatDateUz(dateString) {
+function formatDateUz(dateString: string): string {
     const date = new Date(dateString);
 
     const months = [
