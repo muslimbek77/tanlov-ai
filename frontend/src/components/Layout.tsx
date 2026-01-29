@@ -77,11 +77,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               >
                 <div className="relative">
                   <img
-                    src="/kqlogo.png"
+                    src="/logogold.png"
                     alt="Logo"
-                    className="h-[90px] transition-all duration-300 group-hover:scale-110 drop-shadow-xl"
+                    className="h-[70px] w-[140px] transition-all duration-300 group-hover:scale-105 drop-shadow-xl"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-r from-primary/30 via-purple-400/30 to-primary/30 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                  {/* <div className="absolute inset-0 bg-gradient-to-r from-primary/30 via-purple-400/30 to-primary/30 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div> */}
                 </div>
               </Link>
             </div>

@@ -147,7 +147,7 @@ const TenderAnalysis: React.FC = () => {
   const { language, t } = useTheme();
 
   const getAuthHeaders = useCallback((): Record<string, string> => {
-    const token = localStorage.getItem('access_token');
+    const token = localStorage.getItem("access_token");
     return token ? { Authorization: `Bearer ${token}` } : {};
   }, []);
 
@@ -297,35 +297,41 @@ const TenderAnalysis: React.FC = () => {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${localStorage.getItem('access_token')}`
+            Authorization: `Bearer ${localStorage.getItem("access_token")}`,
           },
         });
 
         if (response.status === 401) {
           // Token expired, refresh it
-          const refreshToken = localStorage.getItem('refresh_token');
+          const refreshToken = localStorage.getItem("refresh_token");
           if (refreshToken) {
-            const refreshResponse = await fetch(`${API_BASE.replace('/evaluations', '/auth')}/token/refresh/`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ refresh: refreshToken }),
-            });
+            const refreshResponse = await fetch(
+              `${API_BASE.replace("/evaluations", "/auth")}/token/refresh/`,
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ refresh: refreshToken }),
+              },
+            );
 
             if (refreshResponse.ok) {
               const data = await refreshResponse.json();
-              localStorage.setItem('access_token', data.access);
+              localStorage.setItem("access_token", data.access);
               if (data.refresh) {
-                localStorage.setItem('refresh_token', data.refresh);
+                localStorage.setItem("refresh_token", data.refresh);
               }
 
               // Retry delete with new token
-              const retryResponse = await fetch(`${API_BASE}/history/${id}/delete/`, {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  "Authorization": `Bearer ${data.access}`
+              const retryResponse = await fetch(
+                `${API_BASE}/history/${id}/delete/`,
+                {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${data.access}`,
+                  },
                 },
-              });
+              );
 
               if (retryResponse.ok) {
                 window.dispatchEvent(
@@ -416,34 +422,37 @@ const TenderAnalysis: React.FC = () => {
         body: formData,
       });
 
-        if (response.status === 401) {
-          const refreshToken = localStorage.getItem('refresh_token');
-          if (refreshToken) {
-            try {
-              const refreshResp = await fetch(`${API_ENDPOINTS.auth}/token/refresh/`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ refresh: refreshToken })
-              });
-              const refreshData = await refreshResp.json();
-              if (refreshData.access) {
-                localStorage.setItem('access_token', refreshData.access);
-                return analyzeTender();
-              }
-            } catch (e) {
-              setError('Iltimos, qayta kiring');
+      if (response.status === 401) {
+        const refreshToken = localStorage.getItem("refresh_token");
+        if (refreshToken) {
+          try {
+            const refreshResp = await fetch(
+              `${API_ENDPOINTS.auth}/token/refresh/`,
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ refresh: refreshToken }),
+              },
+            );
+            const refreshData = await refreshResp.json();
+            if (refreshData.access) {
+              localStorage.setItem("access_token", refreshData.access);
+              return analyzeTender();
             }
+          } catch (e) {
+            setError("Iltimos, qayta kiring");
           }
-          return;
         }
+        return;
+      }
 
-        const data = await response.json();
+      const data = await response.json();
 
-        if (response.ok && data.success) {
+      if (response.ok && data.success) {
         setTenderAnalysis(data.analysis);
         setStep("participants");
       } else {
-          setError(data.error || data.message || t("analysis.error_analysis"));
+        setError(data.error || data.message || t("analysis.error_analysis"));
       }
     } catch (err) {
       setError(t("analysis.error_server"));
@@ -523,47 +532,53 @@ const TenderAnalysis: React.FC = () => {
           body: formData,
         });
 
-          if (response.status === 401) {
-            const refreshToken = localStorage.getItem('refresh_token');
-            if (refreshToken) {
-              try {
-                const refreshResp = await fetch(`${API_ENDPOINTS.auth}/token/refresh/`, {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ refresh: refreshToken })
-                });
-                const refreshData = await refreshResp.json();
-                if (refreshData.access) {
-                  localStorage.setItem('access_token', refreshData.access);
-                  const retryResponse = await fetch(`${API_BASE}/analyze-participant/`, {
+        if (response.status === 401) {
+          const refreshToken = localStorage.getItem("refresh_token");
+          if (refreshToken) {
+            try {
+              const refreshResp = await fetch(
+                `${API_ENDPOINTS.auth}/token/refresh/`,
+                {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ refresh: refreshToken }),
+                },
+              );
+              const refreshData = await refreshResp.json();
+              if (refreshData.access) {
+                localStorage.setItem("access_token", refreshData.access);
+                const retryResponse = await fetch(
+                  `${API_BASE}/analyze-participant/`,
+                  {
                     method: "POST",
                     body: formData,
-                  });
-                  const retryData = await retryResponse.json();
-                  if (retryData.success) {
-                    const existingIndex = analyses.findIndex(
-                      (a) => a.participant_name === participant.name,
-                    );
-                    if (existingIndex >= 0) {
-                      analyses[existingIndex] = retryData.analysis;
-                    } else {
-                      analyses.push(retryData.analysis);
-                    }
-                    continue;
+                  },
+                );
+                const retryData = await retryResponse.json();
+                if (retryData.success) {
+                  const existingIndex = analyses.findIndex(
+                    (a) => a.participant_name === participant.name,
+                  );
+                  if (existingIndex >= 0) {
+                    analyses[existingIndex] = retryData.analysis;
+                  } else {
+                    analyses.push(retryData.analysis);
                   }
+                  continue;
                 }
-              } catch (e) {
-                console.error("Refresh failed:", e);
               }
+            } catch (e) {
+              console.error("Refresh failed:", e);
             }
-            setError('Iltimos, qayta kiring');
-            setLoading(false);
-            return;
           }
+          setError("Iltimos, qayta kiring");
+          setLoading(false);
+          return;
+        }
 
         const data = await response.json();
 
-          if (response.ok && data.success) {
+        if (response.ok && data.success) {
           const existingIndex = analyses.findIndex(
             (a) => a.participant_name === participant.name,
           );
@@ -573,9 +588,9 @@ const TenderAnalysis: React.FC = () => {
             analyses.push(data.analysis);
           }
         } else {
-            setError(data.error || data.message || t("analysis.error_analysis"));
-            setLoading(false);
-            return;
+          setError(data.error || data.message || t("analysis.error_analysis"));
+          setLoading(false);
+          return;
         }
       }
 
@@ -602,44 +617,53 @@ const TenderAnalysis: React.FC = () => {
 
       let compareData: any;
 
-        if (compareResponse.status === 401) {
-          const refreshToken = localStorage.getItem('refresh_token');
-          if (refreshToken) {
-            try {
-              const refreshResp = await fetch(`${API_ENDPOINTS.auth}/token/refresh/`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ refresh: refreshToken })
-              });
-              const refreshData = await refreshResp.json();
-              if (refreshData.access) {
-                localStorage.setItem('access_token', refreshData.access);
-                const retryResponse = await fetch(`${API_BASE}/compare-participants/`, {
+      if (compareResponse.status === 401) {
+        const refreshToken = localStorage.getItem("refresh_token");
+        if (refreshToken) {
+          try {
+            const refreshResp = await fetch(
+              `${API_ENDPOINTS.auth}/token/refresh/`,
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ refresh: refreshToken }),
+              },
+            );
+            const refreshData = await refreshResp.json();
+            if (refreshData.access) {
+              localStorage.setItem("access_token", refreshData.access);
+              const retryResponse = await fetch(
+                `${API_BASE}/compare-participants/`,
+                {
                   method: "POST",
-                headers: { "Content-Type": "application/json", ...getAuthHeaders() },
-                body: JSON.stringify({ participants: analyses, language }),
-              });
+                  headers: {
+                    "Content-Type": "application/json",
+                    ...getAuthHeaders(),
+                  },
+                  body: JSON.stringify({ participants: analyses, language }),
+                },
+              );
               const retryData = await retryResponse.json();
               if (retryData.success) {
                 compareData = retryData;
               }
-              }
-            } catch (e) {
-              console.error("Refresh failed:", e);
             }
+          } catch (e) {
+            console.error("Refresh failed:", e);
           }
+        }
         if (!compareData) {
-          setError('Iltimos, qayta kiring');
+          setError("Iltimos, qayta kiring");
           setLoading(false);
           return;
         }
-        }
+      }
 
       if (!compareData) {
         compareData = await compareResponse.json();
       }
 
-        if (compareResponse.ok && compareData.success) {
+      if (compareResponse.ok && compareData.success) {
         setRanking(compareData.ranking);
         setWinner(compareData.winner);
         setSummary(compareData.summary);
@@ -649,7 +673,10 @@ const TenderAnalysis: React.FC = () => {
         try {
           const saveResponse = await fetch(`${API_BASE}/save-result/`, {
             method: "POST",
-            headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+            headers: {
+              "Content-Type": "application/json",
+              ...getAuthHeaders(),
+            },
             body: JSON.stringify({
               tender: tenderAnalysis,
               participants: analyses,
@@ -668,7 +695,9 @@ const TenderAnalysis: React.FC = () => {
         }
       }
     } catch (err) {
-        setError(err instanceof Error ? err.message : t("analysis.error_analysis"));
+      setError(
+        err instanceof Error ? err.message : t("analysis.error_analysis"),
+      );
       console.error(err);
     } finally {
       setLoading(false);
@@ -676,8 +705,15 @@ const TenderAnalysis: React.FC = () => {
   };
 
   const resetAnalysis = async () => {
+    const token = localStorage.getItem("access_token");
     try {
-      await fetch(`${API_BASE}/reset/`, { method: "POST" });
+      await fetch(`${API_BASE}/reset/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
     } catch (err) {
       console.error("Reset error:", err);
     }
@@ -801,6 +837,7 @@ const TenderAnalysis: React.FC = () => {
     [t],
   );
 
+  console.log("tenderAnalysis", tenderAnalysis);
 
   return (
     <div className="space-y-8 relative z-10">
