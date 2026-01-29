@@ -20,7 +20,6 @@ import {
 } from "lucide-react";
 import { useTheme } from "../context/ThemeContext";
 import { API_ENDPOINTS } from "../config/api";
-import apiClient from "../lib/api-client";
 
 // Mock translation function - replace with your actual implementation
 
@@ -148,7 +147,7 @@ Progress.displayName = "Progress";
 const AnalysisHistory = () => {
   const navigate = useNavigate();
   const { t } = useTheme();
-  
+
   interface AnalysisResult {
     id: number;
     date: string;
@@ -160,10 +159,12 @@ const AnalysisHistory = () => {
     ranking: any[];
     summary: string;
   }
-  
+
   const [savedResults, setSavedResults] = useState<AnalysisResult[]>([]);
   const [expandedId, setExpandedId] = useState<number | null>(null);
-  const [selectedResult, setSelectedResult] = useState<AnalysisResult | null>(null);
+  const [selectedResult, setSelectedResult] = useState<AnalysisResult | null>(
+    null,
+  );
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -177,14 +178,90 @@ const AnalysisHistory = () => {
     setError(null);
 
     try {
-      const response = await apiClient.get('/evaluations/history/');
-      
-      if (response.data.success && response.data.history) {
-        setSavedResults(response.data.history);
+      let token = localStorage.getItem("access_token");
+      const refreshToken = localStorage.getItem("refresh_token");
+
+      // If no token, try to refresh
+      if (!token && refreshToken) {
+        const refreshResponse = await fetch(
+          `${API_ENDPOINTS.auth}/token/refresh/`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ refresh: refreshToken }),
+          },
+        );
+
+        if (refreshResponse.ok) {
+          const data = await refreshResponse.json();
+          token = data.access;
+          localStorage.setItem("access_token", data.access);
+          if (data.refresh) {
+            localStorage.setItem("refresh_token", data.refresh);
+          }
+        } else {
+          setError("Authentication required. Please login.");
+          setLoading(false);
+          return;
+        }
+      }
+
+      if (!token) {
+        setError("No authentication token. Please login.");
+        setLoading(false);
+        return;
+      }
+
+      let response = await fetch(`${API_ENDPOINTS.evaluations}/history/`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      // If 401, try to refresh token
+      if (response.status === 401 && refreshToken) {
+        const refreshResponse = await fetch(
+          `${API_ENDPOINTS.auth}/token/refresh/`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ refresh: refreshToken }),
+          },
+        );
+
+        if (refreshResponse.ok) {
+          const data = await refreshResponse.json();
+          const newToken = data.access;
+          localStorage.setItem("access_token", newToken);
+          if (data.refresh) {
+            localStorage.setItem("refresh_token", data.refresh);
+          }
+
+          // Retry with new token
+          response = await fetch(`${API_ENDPOINTS.evaluations}/history/`, {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${newToken}`,
+            },
+          });
+        }
+      }
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch history: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+
+      if (data.success && data.history) {
+        setSavedResults(data.history);
       }
     } catch (e: any) {
       console.error("Error loading results:", e);
-      setError(e.response?.data?.error || e.message || "Failed to load history");
+      setError(e.message);
     } finally {
       setLoading(false);
     }
@@ -192,16 +269,69 @@ const AnalysisHistory = () => {
 
   const deleteResult = async (id: number) => {
     try {
-      await apiClient.delete(`/evaluations/history/${id}/delete/`);
-      
-      const updated = savedResults.filter((r) => r.id !== id);
-      setSavedResults(updated);
-      if (selectedResult?.id === id) {
-        setSelectedResult(null);
+      const accessToken = localStorage.getItem("access_token");
+      const refreshToken = localStorage.getItem("refresh_token");
+
+      let response = await fetch(
+        `${API_ENDPOINTS.evaluations}/history/${id}/delete/`,
+        {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+            ...(accessToken && { Authorization: `Bearer ${accessToken}` }),
+          },
+        },
+      );
+
+      // If 401, try to refresh token
+      if (response.status === 401 && refreshToken) {
+        try {
+          const refreshResponse = await fetch(
+            `${API_ENDPOINTS.auth}/token/refresh/`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ refresh: refreshToken }),
+            },
+          );
+
+          if (refreshResponse.ok) {
+            const data = await refreshResponse.json();
+            localStorage.setItem("access_token", data.access);
+            if (data.refresh) {
+              localStorage.setItem("refresh_token", data.refresh);
+            }
+
+            // Retry with new token
+            response = await fetch(
+              `${API_ENDPOINTS.evaluations}/history/${id}/delete/`,
+              {
+                method: "DELETE",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${data.access}`,
+                },
+              },
+            );
+          }
+        } catch (refreshErr) {
+          console.error("Token refresh failed:", refreshErr);
+          window.location.href = "/login";
+          return;
+        }
       }
-    } catch (e: any) {
+
+      if (response.ok) {
+        const updated = savedResults.filter((r) => r.id !== id);
+        setSavedResults(updated);
+        if (selectedResult?.id === id) {
+          setSelectedResult(null);
+        }
+      } else {
+        console.error("Delete failed:", response.statusText);
+      }
+    } catch (e) {
       console.error("Error deleting result:", e);
-      setError(e.response?.data?.error || e.message || "Failed to delete result");
     }
   };
 
@@ -238,16 +368,33 @@ const AnalysisHistory = () => {
     );
   };
 
-  const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr);
-    return date.toLocaleDateString("uz-UZ", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
+  function formatDateUz(dateString) {
+    const date = new Date(dateString);
+
+    const months = [
+      "yanvar",
+      "fevral",
+      "mart",
+      "aprel",
+      "may",
+      "iyun",
+      "iyul",
+      "avgust",
+      "sentyabr",
+      "oktyabr",
+      "noyabr",
+      "dekabr",
+    ];
+
+    const day = date.getDate();
+    const month = months[date.getMonth()];
+    const year = date.getFullYear();
+
+    const hours = String(date.getHours()).padStart(2, "0");
+    const minutes = String(date.getMinutes()).padStart(2, "0");
+
+    return `${day}-${month} ${year}, ${hours}:${minutes}`;
+  }
 
   const filteredResults = savedResults.filter(
     (r) =>
@@ -395,7 +542,7 @@ const AnalysisHistory = () => {
                         </h4>
                         <div className="flex items-center gap-2 mt-2 text-xs text-gray-500 dark:text-gray-400">
                           <Calendar className="w-3.5 h-3.5" />
-                          {formatDate(result.date)}
+                          {formatDateUz(result.date)}
                         </div>
                         <div className="flex items-center gap-2 mt-3 flex-wrap">
                           <Badge variant="secondary" className="text-xs">
@@ -439,7 +586,7 @@ const AnalysisHistory = () => {
                           </h3>
                           <p className="text-gray-600 dark:text-gray-400 text-sm mt-1 flex items-center gap-2">
                             <Calendar className="w-4 h-4" />
-                            {formatDate(selectedResult.date)}
+                            {formatDateUz(selectedResult.date)}
                           </p>
                         </div>
                         {/* <div className="flex gap-2">
