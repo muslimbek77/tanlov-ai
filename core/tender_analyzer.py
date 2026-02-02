@@ -249,7 +249,8 @@ JSON FORMAT (faqat JSON qaytar, boshqa matn yo'q):
             llm_result = llm_engine.generate_response(
                 analysis_prompt,
                 system_prompt=system_prompt,
-                temperature=0.2
+                temperature=0.2,
+                max_tokens=3000  # Tender tahlili uchun yetarli token
             )
             
             # LLM natijasini tekshirish
@@ -290,7 +291,7 @@ JSON:
     ]
 }}
 """
-                retry_result = llm_engine.generate_response(retry_prompt, temperature=0.1)
+                retry_result = llm_engine.generate_response(retry_prompt, temperature=0.1, max_tokens=2000)
                 if retry_result.get('success'):
                     try:
                         retry_json = re.search(r'\{[\s\S]*\}', retry_result.get('response', ''))
@@ -522,7 +523,8 @@ JSON FORMAT (faqat JSON qaytar):
             llm_result = llm_engine.generate_response(
                 analysis_prompt,
                 system_prompt=system_prompt,
-                temperature=0.3
+                temperature=0.3,
+                max_tokens=3500  # Ishtirokchi tahlili uchun yetarli token
             )
             
             # LLM natijasini tekshirish
@@ -566,7 +568,7 @@ ODDIY JSON qaytar:
     "final_verdict": "tavsiya etiladi|shartli|tavsiya etilmaydi"
 }}
 """
-                retry_result = llm_engine.generate_response(retry_prompt, temperature=0.1)
+                retry_result = llm_engine.generate_response(retry_prompt, temperature=0.1, max_tokens=2000)
                 if retry_result.get('success'):
                     try:
                         retry_json = re.search(r'\{[\s\S]*\}', retry_result.get('response', ''))
@@ -800,7 +802,8 @@ BATAFSIL XULOSA YOZ:
             summary_result = llm_engine.generate_response(
                 summary_prompt,
                 system_prompt=system_prompt,
-                temperature=0.3
+                temperature=0.3,
+                max_tokens=4000  # Xulosa to'liq chiqishi uchun
             )
             
             if language == 'ru':

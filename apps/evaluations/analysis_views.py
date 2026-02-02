@@ -1387,17 +1387,21 @@ def delete_analysis_result(request, pk):
 
 
 @api_view(['GET'])
+@permission_classes([IsAuthenticated])
 def get_dashboard_stats(request):
     """
-    Dashboard uchun statistikalar
+    Dashboard uchun statistikalar (faqat joriy foydalanuvchiga tegishli)
     
     GET /api/evaluations/dashboard-stats/
     """
     try:
         from django.db.models import Sum, Avg
         
-        total_analyses = TenderAnalysisResult.objects.count()
-        total_participants = TenderAnalysisResult.objects.aggregate(
+        # Faqat joriy foydalanuvchining ma'lumotlarini filter qilish
+        user_queryset = TenderAnalysisResult.objects.filter(user=request.user)
+        
+        total_analyses = user_queryset.count()
+        total_participants = user_queryset.aggregate(
             total=Sum('participant_count')
         )['total'] or 0
         
@@ -1406,7 +1410,7 @@ def get_dashboard_stats(request):
         from django.utils import timezone
         
         last_30_days = timezone.now() - timedelta(days=30)
-        recent_analyses = TenderAnalysisResult.objects.filter(
+        recent_analyses = user_queryset.filter(
             created_at__gte=last_30_days
         ).count()
         

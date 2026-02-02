@@ -4,10 +4,10 @@ from . import views
 from . import analysis_views
 
 router = DefaultRouter()
-router.register(r'evaluations', views.EvaluationViewSet)
-router.register(r'participant-scores', views.ParticipantScoreViewSet)
-router.register(r'score-details', views.ScoreDetailViewSet)
-router.register(r'evaluation-logs', views.EvaluationLogViewSet)
+router.register(r'evaluations', views.EvaluationViewSet, basename='evaluation')
+router.register(r'participant-scores', views.ParticipantScoreViewSet, basename='participantscore')
+router.register(r'score-details', views.ScoreDetailViewSet, basename='scoredetail')
+router.register(r'evaluation-logs', views.EvaluationLogViewSet, basename='evaluationlog')
 
 urlpatterns = [
     path('', include(router.urls)),
