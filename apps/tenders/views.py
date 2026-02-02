@@ -1,13 +1,22 @@
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
 from .models import Tender, TenderDocument, TenderRequirement
 from .serializers import TenderSerializer, TenderDocumentSerializer, TenderRequirementSerializer
 
 
 class TenderViewSet(viewsets.ModelViewSet):
-    queryset = Tender.objects.all()
     serializer_class = TenderSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        """Faqat joriy foydalanuvchi yaratgan tenderlarni ko'rsatish"""
+        return Tender.objects.filter(created_by=self.request.user)
+    
+    def perform_create(self, serializer):
+        """Tender yaratishda avtomatik foydalanuvchini bog'lash"""
+        serializer.save(created_by=self.request.user)
     
     @action(detail=True, methods=['post'])
     def upload_document(self, request, pk=None):
@@ -36,10 +45,18 @@ class TenderViewSet(viewsets.ModelViewSet):
 
 
 class TenderDocumentViewSet(viewsets.ModelViewSet):
-    queryset = TenderDocument.objects.all()
     serializer_class = TenderDocumentSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        """Faqat joriy foydalanuvchining tenderlariga tegishli hujjatlar"""
+        return TenderDocument.objects.filter(tender__created_by=self.request.user)
 
 
 class TenderRequirementViewSet(viewsets.ModelViewSet):
-    queryset = TenderRequirement.objects.all()
     serializer_class = TenderRequirementSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        """Faqat joriy foydalanuvchining tenderlariga tegishli talablar"""
+        return TenderRequirement.objects.filter(tender__created_by=self.request.user)
