@@ -4,7 +4,7 @@
   <img src="frontend/public/kqlogo.png" alt="Tanlov AI Logo" width="200"/>
 </p>
 
-"Ko'pkapqurilish" AJ uchun davlat xaridlari jarayonida inson omilini kamaytirish va eng yaxshi taklifni (Best Value for Money) matematik va mantiqiy asoslangan holda tanlash uchun AI asoslangan tizim.
+"Ko'prikqurilish" AJ uchun davlat xaridlari jarayonida inson omilini kamaytirish va eng yaxshi taklifni (Best Value for Money) matematik va mantiqiy asoslangan holda tanlash uchun AI asoslangan tizim.
 
 ## 🎯 Asosiy Imkoniyatlar
 
