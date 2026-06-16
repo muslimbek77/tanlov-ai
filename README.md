@@ -250,7 +250,7 @@ Bu loyiha MIT litsenziyasi ostida tarqatiladi.
 
 ## 📞 Aloqa
 
-- **Tashkilot**: "Ko'pkapqurilish" AJ
+- **Tashkilot**: "Ko'prikqurilish" AJ
 - **Loyiha**: Tanlov AI - Tender Tahlil Tizimi
 - **Versiya**: 2.0.0
 
